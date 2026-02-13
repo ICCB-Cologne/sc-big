@@ -18,10 +18,16 @@ sc-big simulate-tree -n 1000 --n-mutations 200 \
   --error-model lodato --seed 42 \
   -o "${OUTPUT_DIR}" -p "${OUTPUT_DIR}/simulation.png" -v
 
-for f in "${OUTPUT_DIR}"/mutation_[0-9][0-9][0-9][0-9].json; do
+for f in "${OUTPUT_DIR}"/mutation_[0-9]*.json; do
+  # Skip result files (sc-big / prosolo outputs).
+  case "$f" in *_scbig.json|*_prosolo*.json) continue ;; esac
+
+  # Parse copy number from filename (e.g. mutation_0003_C3_m2_...).
+  C=$(echo "$f" | grep -oP '(?<=_C)\d+')
+
   sc-big infer -d "$f" --error-model lodato \
     --purity-mean 1.0 --purity-std 0.01 \
-    --copy-number-mean 2.0 --copy-number-std 0.3 --epsilon-sc 0.01 \
+    --copy-number-mean "$C" --copy-number-std 0.3 --epsilon-sc 0.01 \
     --multiplicity-prior geometric --n-workers "${NUM_WORKERS}" \
     -o "${f%.json}_scbig.json" -p "${f%.json}_scbig.png" --diagnostics -v
 

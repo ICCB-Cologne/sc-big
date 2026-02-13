@@ -41,6 +41,24 @@ from src.inference_prosolo import lodato_af, sample_lodato
 logger = get_logger(__name__)
 
 
+def mutation_filename(
+    mutation_id: int, C: int, m: int,
+    purity: float, ccf: float, vaf: float,
+) -> str:
+    """Build a JSON filename encoding ground truth parameters.
+
+    Example: ``mutation_0003_C3_m2_pi0.80_ccf0.090_vaf0.051.json``
+    """
+    return (
+        f"mutation_{mutation_id:04d}"
+        f"_C{C}_m{m}"
+        f"_pi{purity:.2f}"
+        f"_ccf{ccf:.3f}"
+        f"_vaf{vaf:.3f}"
+        f".json"
+    )
+
+
 @dataclass
 class TreeNode:
     """Node in a coalescent tree."""
@@ -534,9 +552,12 @@ def export_tree_simulation(
             ),
             base_concentration_cv=hyperparams.tau_cv,
         )
-        output_file = os.path.join(
-            output_dir, f"mutation_{mut.mutation_id:04d}.json"
+        fname = mutation_filename(
+            mut.mutation_id, mut.copy_number, mut.multiplicity,
+            hyperparams.true_purity, mut.realized_ccf,
+            bulk_data.true_expected_vaf,
         )
+        output_file = os.path.join(output_dir, fname)
         export_simulation(bulk_data, single_cells, hp, output_file=output_file)
         logger.info(f"Exported mutation {mut.mutation_id} to {output_file}")
 
@@ -564,8 +585,13 @@ def export_tree_simulation(
                 "multiplicity": mut.multiplicity,
                 "carrier_cell_ids": mut.carrier_cell_ids,
                 "realized_ccf": mut.realized_ccf,
+                "filename": mutation_filename(
+                    mut.mutation_id, mut.copy_number, mut.multiplicity,
+                    hyperparams.true_purity, mut.realized_ccf,
+                    datasets[i][0].true_expected_vaf,
+                ),
             }
-            for mut in mutations
+            for i, mut in enumerate(mutations)
         ],
         "hyperparameters": {
             "n_cells": hyperparams.n_cells,

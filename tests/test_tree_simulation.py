@@ -30,6 +30,7 @@ from src.tree_simulation import (
     generate_coalescent_tree,
     place_mutations_on_tree,
     export_tree_simulation,
+    mutation_filename,
     _get_descendant_leaves,
 )
 from src.simulation import import_simulation_from_json
@@ -426,8 +427,13 @@ class TestExportImportTree:
             assert "ccf_summary" in metadata
             assert len(metadata["mutations"]) == 3
 
-            for i in range(3):
-                mut_path = os.path.join(tmpdir, f"mutation_{i:04d}.json")
+            for mut, (bulk_data, _) in zip(mutations, datasets):
+                fname = mutation_filename(
+                    mut.mutation_id, mut.copy_number, mut.multiplicity,
+                    hp.true_purity, mut.realized_ccf,
+                    bulk_data.true_expected_vaf,
+                )
+                mut_path = os.path.join(tmpdir, fname)
                 assert os.path.exists(mut_path)
 
     def test_per_mutation_json_loadable(self):
@@ -443,18 +449,21 @@ class TestExportImportTree:
                 nodes, mutations, datasets, hp, tmpdir
             )
 
-            for i in range(2):
-                mut_path = os.path.join(tmpdir, f"mutation_{i:04d}.json")
+            for mut, (orig_bulk, _) in zip(mutations, datasets):
+                fname = mutation_filename(
+                    mut.mutation_id, mut.copy_number, mut.multiplicity,
+                    hp.true_purity, mut.realized_ccf,
+                    orig_bulk.true_expected_vaf,
+                )
+                mut_path = os.path.join(tmpdir, fname)
                 bulk_data, single_cells, hyperparams = \
                     import_simulation_from_json(mut_path)
 
                 assert bulk_data.k_b >= 0
                 assert len(single_cells) == 10
-                assert hyperparams.true_copy_number == mutations[i].copy_number
-                assert hyperparams.true_multiplicity == \
-                    mutations[i].multiplicity
-                assert abs(hyperparams.true_ccf - mutations[i].realized_ccf) \
-                    < 1e-10
+                assert hyperparams.true_copy_number == mut.copy_number
+                assert hyperparams.true_multiplicity == mut.multiplicity
+                assert abs(hyperparams.true_ccf - mut.realized_ccf) < 1e-10
 
     def test_metadata_structure(self):
         """Metadata JSON should have expected structure."""
@@ -504,8 +513,13 @@ class TestExportImportTree:
                 nodes, mutations, datasets, hp, tmpdir
             )
 
-            for i, (orig_bulk, orig_sc) in enumerate(datasets):
-                mut_path = os.path.join(tmpdir, f"mutation_{i:04d}.json")
+            for mut, (orig_bulk, orig_sc) in zip(mutations, datasets):
+                fname = mutation_filename(
+                    mut.mutation_id, mut.copy_number, mut.multiplicity,
+                    hp.true_purity, mut.realized_ccf,
+                    orig_bulk.true_expected_vaf,
+                )
+                mut_path = os.path.join(tmpdir, fname)
                 loaded_bulk, loaded_sc, _ = import_simulation_from_json(
                     mut_path
                 )
