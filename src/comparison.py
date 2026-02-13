@@ -70,10 +70,7 @@ def _f1_curve(probs, labels):
     return thresholds, np.array(f1s)
 
 
-def _plot_comparison_row(
-    axes, scbig_results, prosolo_results, row_label,
-    panel_letters, show_row_label=False,
-):
+def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
     """
     Plot one row of the comparison figure (ROC, F1, calibration).
 
@@ -82,13 +79,8 @@ def _plot_comparison_row(
     axes : array of 3 Axes
     scbig_results : list[dict]
     prosolo_results : list[dict]
-    row_label : str
-        Row label shown on leftmost axis when *show_row_label* is True.
     panel_letters : tuple of 3 str
         E.g. ("a", "b", "c").
-    show_row_label : bool
-        If True, annotate the left edge of the first panel with
-        row_label (mainly for multi-row stratified figures).
     """
     scbig_probs = [r["posterior_prob"] for r in scbig_results]
     scbig_labels = [r["true_variant_present"] for r in scbig_results]
@@ -122,12 +114,6 @@ def _plot_comparison_row(
             label="Random (AUC=0.500)")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    if show_row_label:
-        ax.annotate(
-            row_label, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - 5, 0),
-            xycoords="axes fraction", textcoords="offset points",
-            ha="right", va="center", fontsize=12, rotation=90,
-        )
     ax.set_title("ROC Curve")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.05)
@@ -207,14 +193,14 @@ def _plot_comparison_row(
             )
             r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
             fit_x = np.linspace(0, 1, 100)
-            ax.plot(fit_x, a * fit_x + b, color=color, linewidth=1,
+            ax.plot(fit_x, a * fit_x + b, color=color, linewidth=2.5,
                     alpha=0.5)
             label = f"{name} (y={a:.2f}x+{b:.2f}, R\u00b2={r2:.3f})"
         else:
             label = name
 
-        ax.scatter(bin_means, bin_obs, color=color, s=80,
-                   marker=marker, label=label, zorder=5)
+        ax.scatter(bin_means, bin_obs, color=color, s=56,
+                   marker=marker, label=label, zorder=5, alpha=0.5)
 
     ax.plot([0, 1], [0, 1], "k--", alpha=0.5, label="Perfect calibration")
     ax.set_xlabel("Predicted Probability")
@@ -255,8 +241,7 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
     # Figure 1: overall comparison (single row).
     fig, axes = plt.subplots(1, 3, figsize=(18, 4), squeeze=False)
     _plot_comparison_row(
-        axes[0], scbig_results, prosolo_results,
-        "All", _PANEL_LETTERS[0],
+        axes[0], scbig_results, prosolo_results, _PANEL_LETTERS[0],
     )
     plt.tight_layout()
     plt.savefig(output_file, dpi=300, bbox_inches="tight")
@@ -292,12 +277,17 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
     )
     for row_idx, (label, s_res, p_res) in enumerate(strat_rows):
         _plot_comparison_row(
-            all_axes[row_idx], s_res, p_res,
-            label, _PANEL_LETTERS[row_idx],
-            show_row_label=True,
+            all_axes[row_idx], s_res, p_res, _PANEL_LETTERS[row_idx],
         )
 
     plt.tight_layout()
+
+    for row_idx, (label, _, _) in enumerate(strat_rows):
+        mid_ax = all_axes[row_idx][1]
+        mid_ax.text(
+            0.5, 1.22, label, transform=mid_ax.transAxes,
+            ha="center", va="bottom", fontsize=13, fontweight="bold",
+        )
     plt.savefig(stratified_output_file, dpi=300,
                 bbox_inches="tight")
     plt.close()
