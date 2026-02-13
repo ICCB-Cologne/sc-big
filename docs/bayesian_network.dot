@@ -1,0 +1,72 @@
+digraph BayesianSNVModel {
+    rankdir=TB;
+    node [fontname="Arial", fontsize=10];
+
+    subgraph cluster_bulk {
+        label="Bulk Sample";
+        style="invis";
+        // style="dotted,rounded";
+
+        // Hyperparameters (rectangles)
+        pi_bar [label=<&pi;&#773;>, shape=rect];
+        sigma_pi [label=<&sigma;<SUP>2</SUP><SUB>&pi;</SUB>>, shape=rect];
+        C_bar [label=<C&#773;>, shape=rect];
+        sigma_C [label=<&sigma;<SUP>2</SUP><SUB>C</SUB>>, shape=rect];
+        kappa [label=<&kappa;>, shape=rect];
+
+        // Latent variables (circles)
+        pi [label=<&pi;>, shape=circle];
+        C [label=<C>, shape=circle];
+        m [label=<m>, shape=circle];
+        CCF [label=<CCF>, shape=doublecircle];
+
+        // Observed random variables (shaded circles)
+        k_b [label=<k<SUB>b</SUB>>, shape=circle, style=filled, fillcolor=lightgray];
+
+        // Fixed experimental parameters (rectangles)
+        n_b [label=<n<SUB>b</SUB>>, shape=rect];
+    }
+
+    subgraph cluster_sc {
+        label=<cell<sub>i</sub> ∈ {1, ..., <i>N</i>}>;
+        labelloc = "b";
+        labeljust = "r";
+        style="rounded";
+
+        // Hyperparameters (rectangles)
+        epsilon_sc [label=<&epsilon;<SUB>sc</SUB>>, shape=rect];
+        germline_data [label=<&#8459;>, shape=rect];
+
+        // Latent variables (circles)
+        z [label=<z>, shape=doublecircle];
+
+        // Observed random variables (shaded circles)
+        k_sc [label=<k<SUB>sc</SUB>>, shape=circle, style=filled, fillcolor=lightgray];
+
+        // Fixed experimental parameters (rectangles)
+        n_sc [label=<n<SUB>sc</SUB>>, shape=rect];
+    }
+
+    // Bulk priors
+    pi_bar -> pi;
+    sigma_pi -> pi;
+    C_bar -> C;
+    sigma_C -> C;
+
+    // Bulk likelihood
+    pi -> k_b;
+    C -> k_b;
+    m -> k_b;
+    CCF -> k_b;
+    kappa -> k_b;
+    n_b -> k_b;
+
+    // Single cell dependencies
+    CCF -> z;
+    z -> k_sc;
+    C -> k_sc;  // Copy number affects expected VAF via m/C
+    m -> k_sc;  // Multiplicity affects expected VAF via m/C
+    germline_data -> k_sc;  // Germline SNPs inform concentration tau
+    epsilon_sc -> k_sc;
+    n_sc -> k_sc;
+}

@@ -1,0 +1,36 @@
+digraph ParameterIllustration {
+    rankdir=TB;
+
+    biopsy [label="Tumor Biopsy", fontsize=18, shape=diamond, penwidth=2];
+
+    subgraph cluster_bulk {
+        label="Bulk Tumor Sample";
+        style="rounded";
+        penwidth=2;
+        fontsize=18;
+        color=black;
+
+        bulk_cells [label="Total cells sampled: 10\nCancer cells with variant: 5/10\nCancer cells without variant: 2/10\nNormal cells: 3/10\n\nπ = 7/10\nCCF = 5/7\nC = 2\nm = 1\nn = 100, k = 25", shape=rect];
+    }
+
+    subgraph cluster_single_cells {
+        label="Single Cells";
+        style="rounded";
+        penwidth=2;
+        fontsize=18;
+        color=black;
+
+        cell1 [label="z=1\n\nn=5, k=2\namp. bias", shape=circle];
+        cell2 [label="z=0\n\nn=6, k=1\namp. bias", shape=circle];
+        cell3 [label="z=1\n\nn=4, k=0\namp. bias", shape=circle];
+        cell4 [label="z=0\n\nn=5, k=0\namp. bias", shape=circle];
+        cell5 [label="z=1\n\nn=4, k=2\namp. bias", shape=circle];
+    }
+
+    biopsy -> bulk_cells [penwidth=0.7, style=dotted];
+    biopsy -> cell1 [penwidth=0.7, style=dotted];
+    biopsy -> cell2 [penwidth=0.7, style=dotted];
+    biopsy -> cell3 [penwidth=0.7, style=dotted];
+    biopsy -> cell4 [penwidth=0.7, style=dotted];
+    biopsy -> cell5 [penwidth=0.7, style=dotted];
+}

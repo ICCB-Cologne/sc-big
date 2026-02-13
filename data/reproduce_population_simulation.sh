@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+command -v prosolo >/dev/null 2>&1 || {
+    echo "ERROR: 'prosolo' not found on PATH." >&2
+    echo "Activate the prosolo conda environment first." >&2
+    exit 1
+}
+
+OUTPUT_DIR="data/population_simulation"
+rm -rf "${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
+
+sc-big simulate-tree -n 50 --n-mutations 2 \
+  --purity 1.0 --sc-coverage 3 --bulk-coverage 250 \
+  --epsilon-sc 0.01 --n-germline-snps 600 \
+  --error-model lodato --seed 42 \
+  -o "${OUTPUT_DIR}" -p "${OUTPUT_DIR}/simulation.png" -v
+
+for f in "${OUTPUT_DIR}"/mutation_[0-9][0-9][0-9][0-9].json; do
+  sc-big infer -d "$f" --error-model lodato \
+    --purity-mean 1.0 --purity-std 0.01 \
+    --copy-number-mean 2.0 --copy-number-std 0.3 --epsilon-sc 0.01 \
+    --multiplicity-prior geometric --n-workers 15 \
+    -o "${f%.json}_scbig.json" -p "${f%.json}_scbig.png" --diagnostics -v
+
+  sc-big infer-prosolo -d "$f" --base-error-rate 0.01 \
+    --n-workers 15 -o "${f%.json}_prosolo_native.json"
+done
+
+sc-big compare \
+  --scbig "${OUTPUT_DIR}"/mutation_*_scbig.json \
+  --prosolo "${OUTPUT_DIR}"/mutation_*_prosolo_native.json \
+  -o "${OUTPUT_DIR}/comparison.png"
+
+echo "All results saved to: ${OUTPUT_DIR}/"

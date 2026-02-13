@@ -1,0 +1,14 @@
+*.egg-info/
+__pycache__/
+build/
+__mypy__/
+.mypy_cache/
+
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.run.xml
+*.toc
+*.json

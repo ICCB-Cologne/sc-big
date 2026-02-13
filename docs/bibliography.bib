@@ -1,0 +1,367 @@
+@article{lahnemann2021,
+	title = {Accurate and scalable variant calling from single cell {DNA} sequencing data with {ProSolo}},
+	volume = {12},
+	copyright = {2021 The Author(s)},
+	issn = {2041-1723},
+	doi = {10.1038/s41467-021-26938-w},
+	abstract = {Accurate single cell mutational profiles can reveal genomic cell-to-cell heterogeneity. However, sequencing libraries suitable for genotyping require whole genome amplification, which introduces allelic bias and copy errors. The resulting data violates assumptions of variant callers developed for bulk sequencing. Thus, only dedicated models accounting for amplification bias and errors can provide accurate calls. We present ProSolo for calling single nucleotide variants from multiple displacement amplified (MDA) single cell DNA sequencing data. ProSolo probabilistically models a single cell jointly with a bulk sequencing sample and integrates all relevant MDA biases in a site-specific and scalable—because computationally efficient—manner. This achieves a higher accuracy in calling and genotyping single nucleotide variants in single cells in comparison to state-of-the-art tools and supports imputation of insufficiently covered genotypes, when downstream tools cannot handle missing data. Moreover, ProSolo implements the first approach to control the false discovery rate reliably and flexibly. ProSolo is implemented in an extendable framework, with code and usage at: https://github.com/prosolo/prosolo},
+	number = {1},
+	journal = {Nature Communications},
+	author = {Lähnemann, David and Köster, Johannes and Fischer, Ute and Borkhardt, Arndt and McHardy, Alice C. and Schönhuth, Alexander},
+	month = nov,
+	year = {2021},
+	keywords = {DNA sequencing, Medical genomics, Software, Statistical methods, Tumour heterogeneity},
+	pages = {6744},
+}
+
+@article{koester2020,
+	title = {Varlociraptor: enhancing sensitivity and controlling false discovery rate in somatic indel discovery},
+	volume = {21},
+	issn = {1474-760X},
+	shorttitle = {Varlociraptor},
+	doi = {10.1186/s13059-020-01993-6},
+	abstract = {Accurate discovery of somatic variants is of central importance in cancer research. However, count statistics on discovered somatic insertions and deletions (indels) indicate that large amounts of discoveries are missed because of the quantification of uncertainties related to gap and alignment ambiguities, twilight zone indels, cancer heterogeneity, sample purity, sampling, and strand bias. We provide a unifying statistical model whose dependency structures enable accurate quantification of all inherent uncertainties in short time. Consequently, false discovery rate (FDR) in somatic indel discovery can now be controlled at utmost accuracy, increasing the amount of true discoveries while safely suppressing the FDR.},
+	number = {1},
+	journal = {Genome Biology},
+	author = {Köster, Johannes and Dijkstra, Louis J. and Marschall, Tobias and Schönhuth, Alexander},
+	month = apr,
+	year = {2020},
+	keywords = {Bayesian latent variable model, FDR control, Somatic, Tumor/normal, Variant calling},
+	pages = {98},
+}
+
+@Article{wu2021,
+    author={Wu, Fengying and Fan, Jue and He, Yayi and Xiong, Anwen and Yu, Jia and Li, Yixin and Zhang, Yan and Zhao, Wencheng and Zhou, Fei and Li, Wei and Zhang, Jie and Zhang, Xiaosheng and Qiao, Meng and Gao, Guanghui and Chen, Shanhao and Chen, Xiaoxia and Li, Xuefei and Hou, Likun and Wu, Chunyan and Su, Chunxia and Ren, Shengxiang and Odenthal, Margarete and Buettner, Reinhard and Fang, Nan and Zhou, Caicun},
+    title={Single-cell profiling of tumor heterogeneity and the microenvironment in advanced non-small cell lung cancer},
+    journal={Nature Communications},
+    year={2021},
+    month={May},
+    day={05},
+    volume={12},
+    number={1},
+    pages={2540},
+    abstract={Lung cancer is a highly heterogeneous disease. Cancer cells and cells within the tumor microenvironment together determine disease progression, as well as response to or escape from treatment. To map the cell type-specific transcriptome landscape of cancer cells and their tumor microenvironment in advanced non-small cell lung cancer (NSCLC), we analyze 42 tissue biopsy samples from stage III/IV NSCLC patients by single cell RNA sequencing and present the large scale, single cell resolution profiles of advanced NSCLCs. In addition to cell types described in previous single cell studies of early stage lung cancer, we are able to identify rare cell types in tumors such as follicular dendritic cells and T helper 17 cells. Tumors from different patients display large heterogeneity in cellular composition, chromosomal structure, developmental trajectory, intercellular signaling network and phenotype dominance. Our study also reveals a correlation of tumor heterogeneity with tumor associated neutrophils, which might help to shed light on their function in NSCLC.},
+    issn={2041-1723},
+    doi={10.1038/s41467-021-22801-0}
+}
+
+@article{luquette2019,
+  title     = "Identification of somatic mutations in single cell {DNA-seq}
+               using a spatial model of allelic imbalance",
+  author    = "Luquette, Lovelace J and Bohrson, Craig L and Sherman, Max A and
+               Park, Peter J",
+  abstract  = "Recent advances in single cell technology have enabled
+               dissection of cellular heterogeneity in great detail. However,
+               analysis of single cell DNA sequencing data remains challenging
+               due to bias and artifacts that arise during DNA extraction and
+               whole-genome amplification, including allelic imbalance and
+               dropout. Here, we present a framework for statistical estimation
+               of allele-specific amplification imbalance at any given position
+               in single cell whole-genome sequencing data by utilizing the
+               allele frequencies of heterozygous single nucleotide
+               polymorphisms in the neighborhood. The resulting allelic
+               imbalance profile is critical for determining whether the
+               variant allele fraction of an observed mutation is consistent
+               with the expected fraction for a true variant. This method,
+               implemented in SCAN-SNV (Single Cell ANalysis of SNVs),
+               substantially improves the identification of somatic variants in
+               single cells. Our allele balance framework is broadly applicable
+               to genotype analysis of any variant type in any data that might
+               exhibit allelic imbalance.",
+  journal   = "Nat. Commun.",
+  volume    =  10,
+  number    =  1,
+  pages     = "3908",
+  month     =  aug,
+  year      =  2019
+}
+
+@article{zafar2016,
+  title    = "Monovar: single-nucleotide variant detection in single cells",
+  author   = "Zafar, Hamim and Wang, Yong and Nakhleh, Luay and Navin, Nicholas
+              and Chen, Ken",
+  abstract = "Current variant callers are not suitable for single-cell DNA
+              sequencing, as they do not account for allelic dropout,
+              false-positive errors and coverage nonuniformity. We developed
+              Monovar (https://bitbucket.org/hamimzafar/monovar), a statistical
+              method for detecting and genotyping single-nucleotide variants in
+              single-cell data. Monovar exhibited superior performance over
+              standard algorithms on benchmarks and in identifying driver
+              mutations and delineating clonal substructure in three different
+              human tumor data sets.",
+  journal  = "Nat. Methods",
+  volume   =  13,
+  number   =  6,
+  pages    = "505--507",
+  month    =  jun,
+  year     =  2016
+}
+
+@article{dong2017,
+  title     = "Accurate identification of single-nucleotide variants in
+               whole-genome-amplified single cells",
+  author    = "Dong, Xiao and Zhang, Lei and Milholland, Brandon and Lee,
+               Moonsook and Maslov, Alexander Y and Wang, Tao and Vijg, Jan",
+  abstract  = "Mutation analysis in single-cell genomes is prone to artifacts
+               associated with cell lysis and whole-genome amplification. Here
+               we addressed these issues by developing single-cell multiple
+               displacement amplification (SCMDA) and a general-purpose
+               single-cell-variant caller, SCcaller
+               (https://github.com/biosinodx/SCcaller/). By comparing
+               SCMDA-amplified single cells with unamplified clones from the
+               same population, we validated the procedure as a firm foundation
+               for standardized somatic-mutation analysis in single-cell
+               genomics.",
+  journal   = "Nat. Methods",
+  volume    =  14,
+  number    =  5,
+  pages     = "491--493",
+  month     =  may,
+  year      =  2017,
+}
+
+@article{rozenblatt-rosen2020,
+  title     = "The Human Tumor Atlas Network: Charting tumor transitions across
+               space and time at single-cell resolution",
+  author    = "Rozenblatt-Rosen, Orit and Regev, Aviv and Oberdoerffer, Philipp
+               and Nawy, Tal and Hupalowska, Anna and Rood, Jennifer E and
+               Ashenberg, Orr and Cerami, Ethan and Coffey, Robert J and Demir,
+               Emek and Ding, Li and Esplin, Edward D and Ford, James M and
+               Goecks, Jeremy and Ghosh, Sharmistha and Gray, Joe W and
+               Guinney, Justin and Hanlon, Sean E and Hughes, Shannon K and
+               Hwang, E Shelley and Iacobuzio-Donahue, Christine A and
+               Jan{\'e}-Valbuena, Judit and Johnson, Bruce E and Lau, Ken S and
+               Lively, Tracy and Mazzilli, Sarah A and Pe'er, Dana and
+               Santagata, Sandro and Shalek, Alex K and Schapiro, Denis and
+               Snyder, Michael P and Sorger, Peter K and Spira, Avrum E and
+               Srivastava, Sudhir and Tan, Kai and West, Robert B and Williams,
+               Elizabeth H and {Human Tumor Atlas Network}",
+  abstract  = "Crucial transitions in cancer-including tumor initiation, local
+               expansion, metastasis, and therapeutic resistance-involve
+               complex interactions between cells within the dynamic tumor
+               ecosystem. Transformative single-cell genomics technologies and
+               spatial multiplex in situ methods now provide an opportunity to
+               interrogate this complexity at unprecedented resolution. The
+               Human Tumor Atlas Network (HTAN), part of the National Cancer
+               Institute (NCI) Cancer Moonshot Initiative, will establish a
+               clinical, experimental, computational, and organizational
+               framework to generate informative and accessible
+               three-dimensional atlases of cancer transitions for a diverse
+               set of tumor types. This effort complements both ongoing efforts
+               to map healthy organs and previous large-scale cancer genomics
+               approaches focused on bulk sequencing at a single point in time.
+               Generating single-cell, multiparametric, longitudinal atlases
+               and integrating them with clinical outcomes should help identify
+               novel predictive biomarkers and features as well as
+               therapeutically relevant cell types, cell states, and cellular
+               interactions across transitions. The resulting tumor atlases
+               should have a profound impact on our understanding of cancer
+               biology and have the potential to improve cancer detection,
+               prevention, and therapeutic discovery for better
+               precision-medicine treatments of cancer patients and those at
+               risk for cancer.",
+  journal   = "Cell",
+  volume    =  181,
+  number    =  2,
+  pages     = "236--249",
+  month     =  apr,
+  year      =  2020
+}
+
+@article{leighton2023,
+  title     = "Reconstructing mutational lineages in breast cancer by
+               multi-patient-targeted single-cell {DNA} sequencing",
+  author    = "Leighton, Jake and Hu, Min and Sei, Emi and Meric-Bernstam,
+               Funda and Navin, Nicholas E",
+  abstract  = "Single-cell DNA sequencing (scDNA-seq) methods are powerful
+               tools for profiling mutations in cancer cells; however, most
+               genomic regions sequenced in single cells are non-informative.
+               To overcome this issue, we developed a multi-patient-targeted
+               (MPT) scDNA-seq method. MPT involves first performing bulk exome
+               sequencing across a cohort of cancer patients to identify
+               somatic mutations, which are then pooled together to develop a
+               single custom targeted panel for high-throughput scDNA-seq using
+               a microfluidics platform. We applied MPT to profile 330
+               mutations across 23,500 cells from 5 patients with triple
+               negative-breast cancer (TNBC), which showed that 3 tumors were
+               monoclonal and 2 tumors were polyclonal. From these data, we
+               reconstructed mutational lineages and identified early
+               mutational and copy-number events, including early TP53
+               mutations that occurred in all five patients. Collectively, our
+               data suggest that MPT can overcome a major technical obstacle
+               for studying tumor evolution using scDNA-seq by profiling
+               information-rich mutation sites.",
+  journal   = "Cell Genom.",
+  volume    =  3,
+  number    =  1,
+  pages     = "100215",
+  month     =  jan,
+  year      =  2023
+}
+
+@article{chen2025,
+  title     = "Analysis of genomic heterogeneity and the mutational landscape
+               in cutaneous squamous cell carcinoma through
+               multi-patient-targeted single-cell {DNA} sequencing",
+  author    = "Chen, Wen and Xu, Jiawei and Yu, Chengdong and Zhou, Meng and
+               Ai, Yong and Rao, Wenbing and Wang, Qingchuan and Xu, Siyi and
+               Tang, Lei and Gong, Si and Rao, Jun",
+  abstract  = "BACKGROUND: Cutaneous squamous cell carcinoma (CSCC) is a
+               prevalent skin cancer with aggressive progression that poses
+               significant challenges, especially in metastatic cases.
+               Single-cell DNA sequencing (scDNA-seq) has become an advanced
+               technology for elucidating tumor heterogeneity and clonal
+               evolution. However, comprehensive scDNA-seq studies and tailored
+               mutation panels for CSCC are lacking. METHODS: We analyzed the
+               genomic landscape of Chinese CSCC patients via a
+               Multi-Patient-Targeted (MPT) scDNA-seq approach. This method
+               combined bulk exome sequencing with Tapestri scDNA-seq.
+               Mutations identified through bulk sequencing were used to design
+               a targeted panel for scDNA-seq. Comparative analysis was
+               conducted to explore the associations between specific gene
+               mutations and clinical characteristics such as tumor stage and
+               patient sex. Clonal evolution analysis was performed to
+               understand the evolutionary trajectories of the tumors. RESULTS:
+               Bulk sequencing revealed a diverse spectrum of somatic mutations
+               in CSCC tumors, with missense mutations being predominant. The
+               top tumor mutations, such as those in NOTCH1, TP53, NOTCH2, TTN,
+               MUC16, RYR2, PRUNE2, DMD, HRAS, and CDKN2A, presented similar
+               frequencies to those reported in studies in Korean and Caucasian
+               populations. However, the mutation frequencies of HRAS, TTN,
+               MUC16 and MUC4 were significantly different from the Korean and
+               Caucasian populations. Comparative analysis revealed
+               associations between specific gene mutations and clinical
+               characteristics such as tumor stage and patient sex. Clonal
+               evolution analysis via scDNA-seq revealed distinct evolutionary
+               trajectories and their potential correlation with tumor
+               development and patient prognosis. Furthermore, scDNA-seq
+               identified two low-frequency mutation clones, NLRP5 and HMMR,
+               which play important roles in the clonal evolution of CSCC.
+               CONCLUSIONS: Our study introduced a novel MPT sequencing
+               approach for CSCC, providing insights into tumor heterogeneity
+               and clonal evolution. We identified novel mutations and their
+               potential associations with patient survival and tumor
+               characteristics. Overall, our study layed the groundwork for
+               personalized treatment strategies and provides a reference for
+               future applications of the MPT panel in CSCC patients.",
+  journal   = "BMC Cancer",
+  volume    =  25,
+  number    =  1,
+  pages     = "1362",
+  month     =  aug,
+  year      =  2025
+}
+
+@article{zhang2023,
+  title    = "Application of high-throughput single-nucleus {DNA} sequencing in
+              pancreatic cancer",
+  author   = "Zhang, Haochen and Karnoub, Elias-Ramzey and Umeda, Shigeaki and
+              Chalign{\'e}, Ronan and Masilionis, Ignas and McIntyre, Caitlin A
+              and Sashittal, Palash and Hayashi, Akimasa and Zucker, Amanda and
+              Mullen, Katelyn and Hong, Jungeui and Makohon-Moore, Alvin and
+              Iacobuzio-Donahue, Christine A",
+  abstract = "Despite insights gained by bulk DNA sequencing of cancer it
+              remains challenging to resolve the admixture of normal and tumor
+              cells, and/or of distinct tumor subclones; high-throughput
+              single-cell DNA sequencing circumvents these and brings cancer
+              genomic studies to higher resolution. However, its application
+              has been limited to liquid tumors or a small batch of solid
+              tumors, mainly because of the lack of a scalable workflow to
+              process solid tumor samples. Here we optimize a highly automated
+              nuclei extraction workflow that achieves fast and reliable
+              targeted single-nucleus DNA library preparation of 38 samples
+              from 16 pancreatic ductal adenocarcinoma patients, with an
+              average library yield per sample of 2867 single nuclei. We
+              demonstrate that this workflow not only performs well using low
+              cellularity or low tumor purity samples but reveals genomic
+              evolution patterns of pancreatic ductal adenocarcinoma as well.",
+  journal  = "Nat. Commun.",
+  volume   =  14,
+  number   =  1,
+  pages    = "749",
+  month    =  feb,
+  year     =  2023,
+}
+
+@article{hoffman2011,
+	title = {The {No}-{U}-{Turn} {Sampler}: {Adaptively} {Setting} {Path} {Lengths} in {Hamiltonian} {Monte} {Carlo}},
+	doi = {10.48550/arXiv.1111.4246},
+	abstract = {Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC) algorithm that avoids the random walk behavior and sensitivity to correlated parameters that plague many MCMC methods by taking a series of steps informed by first-order gradient information. These features allow it to converge to high-dimensional target distributions much more quickly than simpler methods such as random walk Metropolis or Gibbs sampling. However, HMC's performance is highly sensitive to two user-specified parameters: a step size \{{\textbackslash}epsilon\} and a desired number of steps L. In particular, if L is too small then the algorithm exhibits undesirable random walk behavior, while if L is too large the algorithm wastes computation. We introduce the No-U-Turn Sampler (NUTS), an extension to HMC that eliminates the need to set a number of steps L. NUTS uses a recursive algorithm to build a set of likely candidate points that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. Empirically, NUTS perform at least as efficiently as and sometimes more efficiently than a well tuned standard HMC method, without requiring user intervention or costly tuning runs. We also derive a method for adapting the step size parameter \{{\textbackslash}epsilon\} on the fly based on primal-dual averaging. NUTS can thus be used with no hand-tuning at all. NUTS is also suitable for applications such as BUGS-style automatic inference engines that require efficient "turnkey" sampling algorithms.},
+	publisher = {arXiv},
+	author = {Hoffman, Matthew D. and Gelman, Andrew},
+	month = nov,
+	year = {2011},
+}
+
+@article{bingham2019,
+    author = {Eli Bingham and Jonathan P. Chen and Martin Jankowiak and Fritz Obermeyer and Neeraj Pradhan and Theofanis Karaletsos and Rohit Singh and Paul A. Szerlip and Paul Horsfall and Noah D. Goodman},
+    title     = {Pyro: Deep Universal Probabilistic Programming},
+    journal   = {J. Mach. Learn. Res.},
+    volume    = {20},
+    pages     = {28:1--28:6},
+    year      = {2019},
+}
+
+@misc{claude3,
+    title={Introducing the next generation of Claude},
+    author={Anthropic},
+    year={2024},
+    url={https://www.anthropic.com/news/claude-3-family}
+}
+
+@article{tarabichi2021,
+	title = {A practical guide to cancer subclonal reconstruction from {DNA} sequencing},
+	volume = {18},
+	issn = {1548-7091},
+	doi = {10.1038/s41592-020-01013-2},
+	abstract = {Subclonal reconstruction from bulk tumor DNA sequencing has become a pillar of cancer evolution studies, providing insight into the clonality and relative ordering of mutations and mutational processes. We provide an outline of the complex computational approaches used for subclonal reconstruction from single and multiple tumor samples. We identify the underlying assumptions and uncertainties in each step, and suggest best practices for analysis and quality assessment. This guide provides a pragmatic resource for the growing user community of subclonal reconstruction methods.},
+	number = {2},
+	journal = {Nature methods},
+	author = {Tarabichi, Maxime and Salcedo, Adriana and Deshwar, Amit G. and Leathlobhair, Máire Ni and Wintersinger, Jeff and Wedge, David C. and Loo, Peter Van and Morris, Quaid D. and Boutros, Paul C.},
+	month = feb,
+	year = {2021},
+	pages = {144--155},
+}
+
+@article{malikic_integrative_2019,
+	title = {Integrative inference of subclonal tumour evolution from single-cell and bulk sequencing data},
+	volume = {10},
+	copyright = {2019 The Author(s)},
+	issn = {2041-1723},
+	doi = {10.1038/s41467-019-10737-5},
+	abstract = {Understanding the clonal architecture and evolutionary history of a tumour poses one of the key challenges to overcome treatment failure due to resistant cell populations. Previously, studies on subclonal tumour evolution have been primarily based on bulk sequencing and in some recent cases on single-cell sequencing data. Either data type alone has shortcomings with regard to this task, but methods integrating both data types have been lacking. Here, we present B-SCITE, the first computational approach that infers tumour phylogenies from combined single-cell and bulk sequencing data. Using a comprehensive set of simulated data, we show that B-SCITE systematically outperforms existing methods with respect to tree reconstruction accuracy and subclone identification. B-SCITE provides high-fidelity reconstructions even with a modest number of single cells and in cases where bulk allele frequencies are affected by copy number changes. On real tumour data, B-SCITE generated mutation histories show high concordance with expert generated trees.},
+	number = {1},
+	journal = {Nature Communications},
+	author = {Malikic, Salem and Jahn, Katharina and Kuipers, Jack and Sahinalp, S. Cenk and Beerenwinkel, Niko},
+	month = jun,
+	year = {2019},
+	pages = {2750},
+}
+
+@article{lodato2015,
+  title     = "Somatic mutation in single human neurons tracks developmental
+               and transcriptional history",
+  author    = "Lodato, Michael A and Woodworth, Mollie B and Lee, Semin and
+               Evrony, Gilad D and Mehta, Bhaven K and Karger, Amir and Lee,
+               Soohyun and Chittenden, Thomas W and D'Gama, Alissa M and Cai,
+               Xuyu and Luquette, Lovelace J and Lee, Eunjung and Park, Peter J
+               and Walsh, Christopher A",
+  journal   = "Science",
+  volume    =  350,
+  number    =  6256,
+  pages     = "94--98",
+  month     =  oct,
+  year      =  2015,
+}
+
+
+@article{kozlov2022,
+	title = {{CellPhy}: accurate and fast probabilistic inference of single-cell phylogenies from {scDNA-seq} data},
+	volume = {23},
+	doi = {10.1186/s13059-021-02583-w},
+	number = {1},
+	journal = {Genome Biology},
+	author = {Kozlov, Alexey and Alves, Joao M. and Stamatakis, Alexandros and Posada, David},
+	year = {2022},
+	pages = {37},
+}
