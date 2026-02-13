@@ -212,27 +212,41 @@ def place_mutations_on_tree(
     weights_arr = np.array(weights)
     weights_arr /= weights_arr.sum()
 
-    # @NOTE(ds): Sample branches weighted by length with replacement to allow
-    # multiple mutations on same branch.
-    chosen_indices = rng.choice(
-        len(eligible_nodes), size=n_mutations, replace=True, p=weights_arr
-    )
+    MIN_CCF = 0.05
+    MAX_PLACEMENT_ATTEMPTS = 100
 
     mutations: list[Mutation] = []
-    for mut_idx, branch_idx in enumerate(chosen_indices):
-        branch_node_id = eligible_nodes[branch_idx]
-        u = rng.random()
+    for mut_idx in range(n_mutations):
+        for attempt in range(MAX_PLACEMENT_ATTEMPTS):
+            branch_idx = rng.choice(len(eligible_nodes), p=weights_arr)
+            branch_node_id = eligible_nodes[branch_idx]
 
-        if u < copy_number_deletion_prob:
-            C = 1
-        elif u < copy_number_deletion_prob + copy_number_amplification_prob:
-            C = int(rng.integers(3, 4, endpoint=True))
+            # CN assignment: C ∈ {1, 2, 3}.
+            u = rng.random()
+            if u < copy_number_deletion_prob:
+                C = 1
+            elif u < (copy_number_deletion_prob
+                      + copy_number_amplification_prob):
+                C = 3
+            else:
+                C = 2
+
+            # Geometric multiplicity: P(m|C) ∝ 2^{-m}.
+            m_weights = np.array([2.0 ** (-j) for j in range(1, C + 1)])
+            m_weights /= m_weights.sum()
+            m = int(rng.choice(np.arange(1, C + 1), p=m_weights))
+
+            carrier_cell_ids = _get_descendant_leaves(branch_node_id, nodes)
+            realized_ccf = len(carrier_cell_ids) / n_leaves
+
+            if realized_ccf >= MIN_CCF:
+                break
         else:
-            C = 2
-        m = int(rng.integers(1, C, endpoint=True))
-
-        carrier_cell_ids = _get_descendant_leaves(branch_node_id, nodes)
-        realized_ccf = len(carrier_cell_ids) / n_leaves
+            logger.warning(
+                f"Mutation {mut_idx}: could not find branch with "
+                f"CCF >= {MIN_CCF} after {MAX_PLACEMENT_ATTEMPTS} attempts; "
+                f"using last draw (CCF={realized_ccf:.4f})"
+            )
 
         mutations.append(Mutation(
             mutation_id=mut_idx,

@@ -273,19 +273,19 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
 
     n_rows = len(strat_rows)
     fig, all_axes = plt.subplots(
-        n_rows, 3, figsize=(18, 4 * n_rows), squeeze=False,
+        n_rows, 3, figsize=(18, 5 * n_rows), squeeze=False,
     )
     for row_idx, (label, s_res, p_res) in enumerate(strat_rows):
         _plot_comparison_row(
             all_axes[row_idx], s_res, p_res, _PANEL_LETTERS[row_idx],
         )
 
-    plt.tight_layout()
+    plt.tight_layout(h_pad=4.0)
 
     for row_idx, (label, _, _) in enumerate(strat_rows):
         mid_ax = all_axes[row_idx][1]
         mid_ax.text(
-            0.5, 1.22, label, transform=mid_ax.transAxes,
+            0.5, 1.25, label, transform=mid_ax.transAxes,
             ha="center", va="bottom", fontsize=13, fontweight="bold",
         )
     plt.savefig(stratified_output_file, dpi=300,

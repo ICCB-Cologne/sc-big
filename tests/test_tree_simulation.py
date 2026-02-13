@@ -218,14 +218,14 @@ class TestMutationPlacement:
             assert abs(mut.realized_ccf - expected_ccf) < 1e-10
 
     def test_copy_number_range(self, tree_and_rng):
-        """Copy number should be in valid range."""
+        """Copy number should be in {1, 2, 3}."""
         nodes, total_bl, rng = tree_and_rng
         mutations = place_mutations_on_tree(
             nodes, total_bl, 50, 0.1, 0.1, rng
         )
 
         for mut in mutations:
-            assert 1 <= mut.copy_number <= 4
+            assert 1 <= mut.copy_number <= 3
             assert 1 <= mut.multiplicity <= mut.copy_number
 
     def test_no_amplification_no_deletion(self):
@@ -250,6 +250,49 @@ class TestMutationPlacement:
         for mut in mutations:
             assert mut.copy_number == 1
             assert mut.multiplicity == 1
+
+    def test_all_amplification_gives_cn3(self):
+        """With amplification_prob=1.0, all CN should be 3."""
+        rng = np.random.default_rng(42)
+        nodes, total_bl = generate_coalescent_tree(20, Ne=1.0, rng=rng)
+        mutations = place_mutations_on_tree(
+            nodes, total_bl, 20, 0.0, 1.0, rng
+        )
+
+        for mut in mutations:
+            assert mut.copy_number == 3
+
+    def test_minimum_ccf_enforced(self):
+        """All mutations should have realized CCF >= 0.05."""
+        rng = np.random.default_rng(42)
+        nodes, total_bl = generate_coalescent_tree(100, Ne=1.0, rng=rng)
+        mutations = place_mutations_on_tree(
+            nodes, total_bl, 50, 0.1, 0.1, rng
+        )
+
+        for mut in mutations:
+            assert mut.realized_ccf >= 0.05, \
+                f"Mutation {mut.mutation_id} has CCF={mut.realized_ccf}"
+
+    def test_geometric_multiplicity_bias(self):
+        """Geometric prior should favor m=1 over higher multiplicities."""
+        rng = np.random.default_rng(42)
+        nodes, total_bl = generate_coalescent_tree(100, Ne=1.0, rng=rng)
+        # Force all CN=3 to test multiplicity distribution.
+        mutations = place_mutations_on_tree(
+            nodes, total_bl, 200, 0.0, 1.0, rng
+        )
+
+        m_counts = {1: 0, 2: 0, 3: 0}
+        for mut in mutations:
+            m_counts[mut.multiplicity] += 1
+
+        # With geometric prior P(m|C=3) ∝ 2^{-m}:
+        # P(m=1) ≈ 4/7, P(m=2) ≈ 2/7, P(m=3) ≈ 1/7.
+        assert m_counts[1] > m_counts[2], \
+            f"Expected m=1 ({m_counts[1]}) > m=2 ({m_counts[2]})"
+        assert m_counts[2] > m_counts[3], \
+            f"Expected m=2 ({m_counts[2]}) > m=3 ({m_counts[3]})"
 
 
 class TestCoalescentSNVSimulator:
