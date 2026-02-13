@@ -721,9 +721,7 @@ def plot_tree_simulation(
 
     heatmap = heatmap[np.ix_(cell_order, mut_order)]
     ax4.imshow(heatmap, aspect="auto", cmap="YlOrRd", interpolation="nearest")
-    mut_labels = [f"m{mutations[j].mutation_id}" for j in mut_order]
-    ax4.set_xticks(np.arange(n_muts))
-    ax4.set_xticklabels(mut_labels, rotation=45, ha="right", fontsize=7)
+    ax4.set_xticks([])
     ax4.set_xlabel("Mutations")
     ax4.set_ylabel("Cells")
     ax4.set_title("Mutation status (yellow=absent, red=present)")
