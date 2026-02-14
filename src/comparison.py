@@ -55,25 +55,25 @@ def _roc_curve(probs, labels):
     return np.array(fprs), np.array(tprs)
 
 
-def _f1_curve(probs, labels):
-    """Compute F1 score at each threshold from 0 to 1."""
-    thresholds = np.linspace(0, 1, 101)
-    f1s = []
+def _pr_curve(probs, labels):
+    """Compute (Recall, Precision) pairs sweeping the threshold from 1 to 0."""
+    thresholds = np.linspace(1.01, -0.01, 200)
+    precisions, recalls = [], []
+    n_pos = sum(labels)
+
     for t in thresholds:
         tp = sum(1 for p, y in zip(probs, labels) if p >= t and y)
         fp = sum(1 for p, y in zip(probs, labels) if p >= t and not y)
-        fn = sum(1 for p, y in zip(probs, labels) if p < t and y)
-        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
-        f1s.append(f1)
-    return thresholds, np.array(f1s)
+        recalls.append(tp / n_pos if n_pos > 0 else 0.0)
+        precisions.append(tp / (tp + fp) if (tp + fp) > 0 else 1.0)
+
+    return np.array(recalls), np.array(precisions)
 
 
 def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters,
                          row_title=None):
     """
-    Plot one row of the comparison figure (ROC, F1, calibration).
+    Plot one row of the comparison figure (ROC, PR, calibration).
 
     Parameters
     ----------
@@ -122,41 +122,32 @@ def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters,
     ax.legend(loc="lower right")
     ax.grid(True, alpha=0.3)
 
-    # 2. F1 score vs threshold.
+    # 2. Precision-Recall curve.
     ax = axes[1]
     ax.text(
         -0.15, 1.05, panel_letters[1], transform=ax.transAxes, fontsize=16,
         fontweight="bold", va="top",
     )
 
-    s_thresh, s_f1 = _f1_curve(scbig_probs, scbig_labels)
-    p_thresh, p_f1 = _f1_curve(pro_probs, pro_labels)
-    n_thresh, n_f1 = _f1_curve(naive_probs, naive_labels)
-    s_best_idx = np.argmax(s_f1)
-    p_best_idx = np.argmax(p_f1)
-    n_best_idx = np.argmax(n_f1)
+    s_rec, s_prec = _pr_curve(scbig_probs, scbig_labels)
+    p_rec, p_prec = _pr_curve(pro_probs, pro_labels)
+    n_rec, n_prec = _pr_curve(naive_probs, naive_labels)
+    s_pr_auc = np.trapezoid(s_prec, s_rec)
+    p_pr_auc = np.trapezoid(p_prec, p_rec)
+    n_pr_auc = np.trapezoid(n_prec, n_rec)
 
-    ax.plot(s_thresh, s_f1, "g-", linewidth=2,
-            label=(f"SC-BIG (max F1={s_f1[s_best_idx]:.3f} "
-                   f"at t={s_thresh[s_best_idx]:.2f})"))
-    ax.plot(p_thresh, p_f1, "b--", linewidth=2,
-            label=(f"ProSolo (max F1={p_f1[p_best_idx]:.3f} "
-                   f"at t={p_thresh[p_best_idx]:.2f})"))
-    ax.plot(n_thresh, n_f1, "r-.", linewidth=2,
-            label=(f"Naive VAF (max F1={n_f1[n_best_idx]:.3f} "
-                   f"at t={n_thresh[n_best_idx]:.2f})"))
-    ax.scatter([s_thresh[s_best_idx]], [s_f1[s_best_idx]],
-               color="green", s=100, zorder=5)
-    ax.scatter([p_thresh[p_best_idx]], [p_f1[p_best_idx]],
-               color="blue", s=100, zorder=5)
-    ax.scatter([n_thresh[n_best_idx]], [n_f1[n_best_idx]],
-               color="red", s=100, zorder=5)
-    ax.set_xlabel("Threshold")
-    ax.set_ylabel("F1 Score")
+    ax.plot(s_rec, s_prec, "g-", linewidth=2,
+            label=f"SC-BIG (AUC={s_pr_auc:.3f})")
+    ax.plot(p_rec, p_prec, "b--", linewidth=2,
+            label=f"ProSolo (AUC={p_pr_auc:.3f})")
+    ax.plot(n_rec, n_prec, "r-.", linewidth=2,
+            label=f"Naive VAF (AUC={n_pr_auc:.3f})")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
     if row_title is not None:
         ax.set_title(row_title)
     ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0, 1.05)
     ax.legend(loc="best", fontsize=8)
     ax.grid(True, alpha=0.3)
 
