@@ -70,7 +70,8 @@ def _f1_curve(probs, labels):
     return thresholds, np.array(f1s)
 
 
-def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
+def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters,
+                         row_title=None):
     """
     Plot one row of the comparison figure (ROC, F1, calibration).
 
@@ -81,6 +82,8 @@ def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
     prosolo_results : list[dict]
     panel_letters : tuple of 3 str
         E.g. ("a", "b", "c").
+    row_title : str or None
+        If given, set as title on the middle panel.
     """
     scbig_probs = [r["posterior_prob"] for r in scbig_results]
     scbig_labels = [r["true_variant_present"] for r in scbig_results]
@@ -114,7 +117,6 @@ def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
             label="Random (AUC=0.500)")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title("ROC Curve")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.05)
     ax.legend(loc="lower right")
@@ -151,7 +153,8 @@ def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
                color="red", s=100, zorder=5)
     ax.set_xlabel("Threshold")
     ax.set_ylabel("F1 Score")
-    ax.set_title("F1 Score vs Threshold")
+    if row_title is not None:
+        ax.set_title(row_title)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.legend(loc="best", fontsize=8)
@@ -205,7 +208,6 @@ def _plot_comparison_row(axes, scbig_results, prosolo_results, panel_letters):
     ax.plot([0, 1], [0, 1], "k--", alpha=0.5, label="Perfect calibration")
     ax.set_xlabel("Predicted Probability")
     ax.set_ylabel("Observed Frequency")
-    ax.set_title("Calibration Plot")
     ax.set_xlim(-0.05, 1.05)
     ax.set_ylim(-0.05, 1.05)
     ax.legend(loc="best", fontsize=8)
@@ -278,16 +280,10 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
     for row_idx, (label, s_res, p_res) in enumerate(strat_rows):
         _plot_comparison_row(
             all_axes[row_idx], s_res, p_res, _PANEL_LETTERS[row_idx],
+            row_title=label,
         )
 
-    plt.tight_layout(h_pad=4.0)
-
-    for row_idx, (label, _, _) in enumerate(strat_rows):
-        mid_ax = all_axes[row_idx][1]
-        mid_ax.text(
-            0.5, 1.25, label, transform=mid_ax.transAxes,
-            ha="center", va="bottom", fontsize=13, fontweight="bold",
-        )
+    plt.tight_layout()
     plt.savefig(stratified_output_file, dpi=300,
                 bbox_inches="tight")
     plt.close()
