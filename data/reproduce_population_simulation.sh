@@ -13,6 +13,7 @@ rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
 sc-big simulate-tree -n 1000 --n-mutations 200 \
+  --ccf-distribution uniform \
   --purity 1.0 --sc-coverage 3 --bulk-coverage 250 \
   --epsilon-sc 0.01 --n-germline-snps 10 \
   --error-model lodato --seed 42 \
