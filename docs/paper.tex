@@ -366,7 +366,15 @@ Algorithm~\ref{alg:inference} summarizes the complete inference procedure.
 \end{algorithmic}
 \end{algorithm}
 
-Lastly, algorithm~\ref{alg:simulation} is used to generate synthetic data for validation. To produce a realistic distribution of cellular prevalences, we use the Kingman coalescent~\cite{wu2021}: starting from $N$ leaf nodes (cells), pairs of lineages are merged backwards in time with coalescence times drawn from $\text{Exp}\binom{n}{2}/N_e$, where $n$ is the current number of lineages and $N_e$ is the effective population size. $M$ somatic mutations are placed on branches proportional to branch length, so that mutations near the root are carried by many cells (high CCF) and mutations near the leaves by few (low CCF). Copy number $C_j \in \{1, 2, 3\}$ at each locus is drawn from a categorical distribution and multiplicity is sampled from a geometric prior $P(m_j | C_j) \propto 2^{-m_j}$, $m_j \in \{1, \ldots, C_j\}$, consistent with the inference model. Branches yielding $\text{CCF} < 0.05$ are redrawn to avoid degenerate cases where sparse single-cell coverage is uninformative. We assume the infinite sites model as well as independence between loci.
+Lastly, algorithm~\ref{alg:simulation} is used to generate synthetic data for validation. To produce a realistic distribution of cellular prevalences, we use the Kingman coalescent~\cite{wu2021}: starting from $N$ leaf nodes (cells), pairs of lineages are merged backwards in time with coalescence times drawn from $\text{Exp}\binom{n}{2}/N_e$, where $n$ is the current number of lineages and $N_e$ is the effective population size. A stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ is assigned to the root, representing the time from tumor founding to the most recent common ancestor; mutations on this branch are clonal ($\text{CCF} = 1$). $M$ somatic mutations are placed on branches proportional to branch length, so that mutations near the root are carried by many cells (high CCF) and mutations near the leaves by few (low CCF). Because coalescent trees concentrate most branch length near the leaves, an optional uniform-CCF reweighting spreads mutations across the full CCF spectrum: eligible branches are grouped into $K$ equal-width CCF bins and the sampling weight of branch $i$ in bin $b$ becomes
+%
+\begin{equation}
+    w_i = \frac{\ell_i}{\sum_{i' \in b} \ell_{i'}} \cdot \frac{1}{K_{\neq\emptyset}}
+    \label{eq:ccf-reweight}
+    ,
+\end{equation}
+%
+where $\ell_i$ is the branch length and $K_{\neq\emptyset}$ is the number of non-empty bins. This preserves relative branch-length weighting within each CCF stratum while equalizing total probability across strata. Copy number $C_j \in \{1, 2, 3\}$ at each locus is drawn from a categorical distribution and multiplicity is sampled from a geometric prior $P(m_j | C_j) \propto 2^{-m_j}$, $m_j \in \{1, \ldots, C_j\}$, consistent with the inference model. Branches yielding $\text{CCF} < 0.05$ are redrawn to avoid degenerate cases where sparse single-cell coverage is uninformative. We assume the infinite sites model as well as independence between loci.
 
 Additionally, for each mutation, bulk reads are drawn from a beta-binomial with the expected VAF and single-cell reads are drawn depending on the chosen error model. With the beta-binomial model, cell-specific amplification bias $\tau_i \sim \text{Gamma}(\mu_\tau, \text{CV}_\tau)$ determines overdispersion for both germline SNPs and somatic variants, ensuring that bias estimated from hSNPs transfers to variant calls. With the Lodato model, single-cell reads are sampled from the coverage-dependent beta-binomial PMF (equation~\eqref{eq:lodato-likelihood}) at the mapped allele frequency $\theta_s$ (equation~\eqref{eq:lodato-af-mapping}). Each mutation produces an independent dataset, enabling parallelized inference.
 
@@ -380,7 +388,7 @@ Additionally, for each mutation, bulk reads are drawn from a beta-binomial with 
 \STATE Generate Kingman coalescent tree with $N$ leaves and $N_e$; assign stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ to the root
 \FOR{$j = 1$ to $M$}
     \REPEAT
-        \STATE Sample branch proportional to length; carriers $\gets$ leaf descendants; $\text{CCF}_j \gets |\text{carriers}|/N$
+        \STATE Sample branch with weight $w_i$ (eq.~\eqref{eq:ccf-reweight}); carriers $\gets$ leaf descendants; $\text{CCF}_j \gets |\text{carriers}|/N$
         \STATE Sample $C_j \in \{1, 2, 3\}$, $m_j \sim \text{Geometric}\{1, \ldots, C_j\}$ with $P(m|C) \propto 2^{-m}$
     \UNTIL{$\text{CCF}_j \geq 0.05$}
     \STATE $k_b \sim \text{BetaBinom}(n_b,\; \kappa \cdot \text{VAF}_b,\; \kappa(1-\text{VAF}_b))$ where $\text{VAF}_b = \pi \cdot \text{CCF}_j \cdot m_j / (\pi C_j + 2(1-\pi))$

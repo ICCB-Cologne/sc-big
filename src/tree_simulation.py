@@ -99,6 +99,7 @@ class TreeHyperparameters:
     sc_coverage: int = 3
     seed: int = 42
     error_model: str = "betabinomial"
+    mutation_ccf_distribution: str = "natural"
 
 
 def generate_coalescent_tree(
@@ -199,6 +200,7 @@ def place_mutations_on_tree(
     nodes: list[TreeNode], total_branch_length: float,
     n_mutations: int, copy_number_deletion_prob: float,
     copy_number_amplification_prob: float, rng: np.random.Generator,
+    mutation_ccf_distribution: str = "natural",
 ) -> list[Mutation]:
     """
     Place mutations on tree branches, weighted by branch length.
@@ -217,6 +219,10 @@ def place_mutations_on_tree(
         Probability of CN>2 (amplification)
     rng : np.random.Generator
         Random number generator
+    mutation_ccf_distribution : str
+        "natural" weights branches by length (coalescent prior);
+        "uniform" reweights so that each CCF decile gets equal
+        total probability
 
     Returns
     -------
@@ -226,12 +232,35 @@ def place_mutations_on_tree(
     n_leaves = sum(1 for n in nodes if n.is_leaf)
     eligible_nodes: list[int] = []
     weights: list[float] = []
+    node_ccfs: list[float] = []
+    node_carriers: list[list[int]] = []
     for node in nodes:
         if node.branch_length > 0:
             eligible_nodes.append(node.id)
             weights.append(node.branch_length)
+            leaves = _get_descendant_leaves(node.id, nodes)
+            node_ccfs.append(len(leaves) / n_leaves)
+            node_carriers.append(leaves)
 
     weights_arr = np.array(weights)
+
+    if mutation_ccf_distribution == "uniform":
+        ccf_arr = np.array(node_ccfs)
+        n_bins = 10
+        bin_edges = np.linspace(0.0, 1.0 + 1e-9, n_bins + 1)
+        bin_idx = np.digitize(ccf_arr, bin_edges) - 1
+        bin_totals = np.zeros(n_bins)
+        for i, bi in enumerate(bin_idx):
+            bin_totals[bi] += weights_arr[i]
+        n_nonempty = np.sum(bin_totals > 0)
+        for i, bi in enumerate(bin_idx):
+            if bin_totals[bi] > 0:
+                weights_arr[i] = (
+                    weights_arr[i] / bin_totals[bi] / n_nonempty
+                )
+            else:
+                weights_arr[i] = 0.0
+
     weights_arr /= weights_arr.sum()
 
     MIN_CCF = 0.05
@@ -258,8 +287,8 @@ def place_mutations_on_tree(
             m_weights /= m_weights.sum()
             m = int(rng.choice(np.arange(1, C + 1), p=m_weights))
 
-            carrier_cell_ids = _get_descendant_leaves(branch_node_id, nodes)
-            realized_ccf = len(carrier_cell_ids) / n_leaves
+            carrier_cell_ids = node_carriers[branch_idx]
+            realized_ccf = node_ccfs[branch_idx]
 
             if realized_ccf >= MIN_CCF:
                 break
@@ -490,7 +519,7 @@ class CoalescentSNVSimulator:
             nodes, total_branch_length, self.hyperparams.n_mutations,
             self.hyperparams.copy_number_deletion_prob,
             self.hyperparams.copy_number_amplification_prob,
-            self.rng,
+            self.rng, self.hyperparams.mutation_ccf_distribution,
         )
 
         for mut in mutations:
@@ -616,6 +645,8 @@ def export_tree_simulation(
             "sc_coverage": hyperparams.sc_coverage,
             "seed": hyperparams.seed,
             "error_model": hyperparams.error_model,
+            "mutation_ccf_distribution":
+                hyperparams.mutation_ccf_distribution,
         },
         "ccf_summary": {
             "mean": float(np.mean([m.realized_ccf for m in mutations])),

@@ -311,6 +311,27 @@ class TestMutationPlacement:
         assert m_counts[2] > m_counts[3], \
             f"Expected m=2 ({m_counts[2]}) > m=3 ({m_counts[3]})"
 
+    def test_uniform_ccf_distribution(self):
+        """Uniform mode should spread mutations across CCF deciles."""
+        rng = np.random.default_rng(42)
+        nodes, total_bl = generate_coalescent_tree(
+            200, Ne=1.0, rng=rng
+        )
+        mutations = place_mutations_on_tree(
+            nodes, total_bl, 500, 0.1, 0.1, rng,
+            mutation_ccf_distribution="uniform",
+        )
+
+        ccfs = [m.realized_ccf for m in mutations]
+        low = sum(1 for c in ccfs if c <= 0.3)
+        mid = sum(1 for c in ccfs if 0.3 < c <= 0.7)
+        high = sum(1 for c in ccfs if c > 0.7)
+
+        assert mid > 50, (
+            f"Expected >50 mid-CCF mutations, got {mid} "
+            f"(low={low}, mid={mid}, high={high})"
+        )
+
 
 class TestCoalescentSNVSimulator:
     """Test the full CoalescentSNVSimulator."""

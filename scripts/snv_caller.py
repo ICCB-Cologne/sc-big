@@ -125,6 +125,7 @@ def simulate_tree_command(args: argparse.Namespace) -> None:
         sc_coverage=args.sc_coverage,
         seed=args.seed,
         error_model=args.error_model,
+        mutation_ccf_distribution=args.ccf_distribution,
     )
 
     logger.info(
@@ -686,6 +687,12 @@ def main() -> None:
         choices=["betabinomial", "lodato"],
         help="Amplification error model for read generation: "
         "'betabinomial' (SC-BIG model) or 'lodato' (MDA model)"
+    )
+    tree_parser.add_argument(
+        "--ccf-distribution", type=str, default="natural",
+        choices=["natural", "uniform"],
+        help="Mutation CCF distribution: 'natural' (branch-length "
+        "weighted) or 'uniform' (equal probability per CCF decile)"
     )
     tree_parser.add_argument(
         "--seed", type=int, default=42,
