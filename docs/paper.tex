@@ -377,7 +377,7 @@ Additionally, for each mutation, bulk reads are drawn from a beta-binomial with 
 \REQUIRE $N$ cells, $M$ mutations, $N_e$, purity $\pi$, coverage $(n_b, n_{sc})$, bias $(\mu_\tau, \text{CV}_\tau)$, error model $\in \{\text{beta-binomial}, \text{Lodato}\}$
 \ENSURE $M$ independent datasets with bulk and single-cell data
 
-\STATE Generate Kingman coalescent tree with $N$ leaves and $N_e$
+\STATE Generate Kingman coalescent tree with $N$ leaves and $N_e$; assign stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ to the root
 \FOR{$j = 1$ to $M$}
     \REPEAT
         \STATE Sample branch proportional to length; carriers $\gets$ leaf descendants; $\text{CCF}_j \gets |\text{carriers}|/N$

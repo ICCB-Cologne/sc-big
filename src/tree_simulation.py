@@ -162,6 +162,10 @@ def generate_coalescent_tree(
         active_lineages.append(next_id)
         next_id += 1
 
+    # Stem branch between root and MRCA.
+    root_id = active_lineages[0]
+    nodes[root_id].branch_length = rng.exponential(Ne)
+
     total_branch_length = sum(n.branch_length for n in nodes)
     return nodes, total_branch_length
 
@@ -792,6 +796,27 @@ def _plot_tree_dendrogram(
                         fontsize=6, color="red",
                         xytext=(3, 0), textcoords="offset points"
                     )
+
+    stem = nodes[root_id].branch_length
+    if stem > 0:
+        y_stem_top = y_pos[root_id] - stem
+        ax.plot(
+            [x_pos[root_id], x_pos[root_id]],
+            [y_pos[root_id], y_stem_top],
+            color="black", linewidth=0.5
+        )
+        if root_id in mut_on_branch:
+            muts_here = mut_on_branch[root_id]
+            n_muts_here = len(muts_here)
+            for idx, mut_id in enumerate(muts_here):
+                frac = (idx + 1) / (n_muts_here + 1)
+                my = y_pos[root_id] - frac * stem
+                ax.plot(x_pos[root_id], my, "r*", markersize=8)
+                ax.annotate(
+                    f"m{mut_id}", (x_pos[root_id], my),
+                    fontsize=6, color="red",
+                    xytext=(3, 0), textcoords="offset points"
+                )
 
     ax.set_title(f"Coalescent Tree ({n_leaves} cells)")
     ax.set_xlabel("Cell")

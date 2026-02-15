@@ -71,14 +71,13 @@ class TestKingmanCoalescent:
                 assert nd.parent is not None
 
     def test_all_branch_lengths_positive(self):
-        """All non-root branch lengths should be positive."""
+        """All branch lengths should be positive (including root stem)."""
         rng = np.random.default_rng(42)
         nodes, _ = generate_coalescent_tree(10, Ne=1.0, rng=rng)
 
         for nd in nodes:
-            if nd.parent is not None:
-                assert nd.branch_length > 0, \
-                    f"Node {nd.id} has non-positive branch length"
+            assert nd.branch_length > 0, \
+                f"Node {nd.id} has non-positive branch length"
 
     def test_tree_is_binary(self):
         """Every internal node should have exactly 2 children."""
@@ -130,6 +129,23 @@ class TestKingmanCoalescent:
         _, bl_large = generate_coalescent_tree(50, Ne=10.0, rng=rng2)
 
         assert bl_large > bl_small
+
+    def test_clonal_mutations_possible(self):
+        """With many mutations, at least one lands on the root (CCF=1)."""
+        rng = np.random.default_rng(42)
+        nodes, total_bl = generate_coalescent_tree(20, Ne=1.0, rng=rng)
+
+        root = [nd for nd in nodes if nd.parent is None][0]
+        mutations = place_mutations_on_tree(
+            nodes, total_bl, 200, 0.1, 0.1, rng
+        )
+
+        root_mutations = [m for m in mutations
+                          if m.branch_node_id == root.id]
+        assert len(root_mutations) > 0, \
+            "Expected at least one mutation on the root (clonal, CCF=1.0)"
+        for m in root_mutations:
+            assert m.realized_ccf == 1.0
 
 
 class TestDescendantLeaves:
