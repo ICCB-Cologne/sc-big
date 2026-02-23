@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[10pt]{article}
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{amsmath}
@@ -10,12 +10,18 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{multirow}
+\usepackage{microtype}
 
 \usepackage[default]{cantarell}
 \usepackage[T1]{fontenc}
 \usepackage{sansmath}
 % \sansmath  % Makes math use sans-serif
 \boldmath  % Makes math bold
+
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.7}
 
 \addbibresource{bibliography.bib}
 
@@ -52,16 +58,17 @@
 \maketitle
 
 \begin{abstract}
-\noindent Single-cell DNA sequencing (scDNA-seq) has emerged as a primary method for investigating cancer genomes and intra-tumor heterogeneity. Despite technological advances, scDNA-seq data suffer from issues arising due to amplification bias and allelic dropout, in addition to the intrinsic error rate of sequencing. Low input DNA quantities further exacerbate these issues. Thus, accurately determining the presence or absence of candidate somatic variants in individual cells remains challenging.
+\noindent Single-cell DNA sequencing (scDNA-seq) has emerged as a primary method for investigating cancer genomes and intra-tumor heterogeneity. Despite technological advances, scDNA-seq data suffer from issues arising due to amplification bias and allelic dropout, in addition to the intrinsic error rate of sequencing. Low input DNA quantities further exacerbate these problems. Thus, accurately determining the presence or absence of candidate somatic variants in individual cells remains challenging.
 
 \medskip
 
-\noindent In this work, we develop SC-BIG, a hierarchical Bayesian model that leverages bulk sequencing data from a contemporaneous and representative tumor sample to improve single-cell variant calls. The model propagates uncertainty across multiple biological parameters, such as copy number alterations, sample purity, and variant clonality. The single cell data are used to generate an empirical prior on cancer cell fraction, which cannot be estimated from bulk data alone. The model also estimates technical parameters, such as population-level amplification bias using heterozygous germline single-nucleotide polymorphisms. These biological and technical parameters are used to calculate a matrix of genotype probabilities for all cells.
+\noindent In this work, we develop SC-BIG, a hierarchical Bayesian model that leverages bulk sequencing data from a contemporaneous and representative tumor sample to improve single-cell variant calls. The model propagates uncertainty across multiple biological parameters, such as copy number alterations, sample purity, and variant clonality. The single cell data are used to generate an empirical prior on cancer cell fraction, which cannot be estimated from bulk data alone. Optionally, the model also estimates technical parameters, such as population-level amplification bias using heterozygous germline single-nucleotide polymorphisms. These biological and technical parameters are used to calculate a matrix of genotype probabilities for all cells.
 
 \medskip
 
-\noindent Across simulated scenarios of varying cancer cell fractions, our method achieves consistently higher classifier performance compared to naive thresholding, with the greatest improvement at high cancer cell fraction. Importantly, the method produces well-calibrated posterior probabilities that provide interpretable uncertainty quantification, enabling direct integration into downstream analyses such as phylogenetic reconstruction. Future work will investigate the model's performance on an existing cohort with paired single-cell and bulk sequencing data and extensions to include other information such as single-cell copy number changes or clonal structure.
+\noindent Across simulated scenarios of varying cancer cell fractions, our method achieves consistently higher classifier performance compared to both naive thresholding and ProSolo, the only bulk-informed single-cell mutation caller described so far. Importantly, SC-BIG produces well-calibrated posterior probabilities that provide interpretable uncertainty quantification, enabling direct integration into downstream analyses such as phylogenetic reconstruction. Future work will investigate the model's performance on tumor sequencing data and extend SC-BIG to include information such as single-cell copy number changes or clonal structure.
 \end{abstract}
+
 \newpage
 
 \tableofcontents
@@ -69,22 +76,22 @@
 
 \section{Introduction}
 
-Single-cell DNA sequencing (scDNA-seq) of cancer samples has enabled characterization of intratumor heterogeneity and clonal dynamics at unprecedented resolution and scale.~\cite{wu2021} Unfortunately, this comes at the cost of increased noise from sparse coverage, amplification errors, and allelic dropout (ADO). Existing bioinformatics methods address these challenges through various strategies. \textit{Monovar}~\cite{zafar2016} discovers SNVs \textit{de novo} using a Bayesian model that incorporates ADO and aggregates evidence across multiple cells.\textit{SCcaller}~\cite{dong2017} and \textit{SCAN-SNV}~\cite{luquette2019} estimate local amplification bias from germline heterozygous SNPs (hSNPs), then apply bias-corrected variant calling.
+Single-cell DNA sequencing (scDNA-seq) of cancer samples has enabled characterization of intratumor heterogeneity and clonal dynamics at unprecedented resolution and scale.~\cite{wu2021} Unfortunately, this comes at the cost of increased noise from sparse coverage, amplification errors, and allelic dropout (ADO). Existing bioinformatics methods address these challenges through various strategies. \textit{Monovar}~\cite{zafar2016} discovers SNVs \textit{de novo} using a Bayesian model that incorporates ADO and aggregates evidence across multiple cells. \textit{SCcaller}~\cite{dong2017} and \textit{SCAN-SNV}~\cite{luquette2019} estimate local amplification bias from germline heterozygous SNPs (hSNPs) before applying bias-corrected variant calling.
 
-While these methods enable \textit{de novo} SNV discovery from isolated single-cell experiments, tumor sequencing increasingly comprises multiple data modalities, including scDNA-seq and bulk DNA-seq.~\cite{rozenblatt-rosen2020,leighton2023,chen2025,zhang2023} \textcite{lahnemann2021} were the first to attempt bulk-informed variant calling with \textit{ProSolo}, which genotypes variants in single-cell data using bulk data as a prior. ProSolo builds on the Bayesian framework Varlociraptor~\cite{koester2020} and partitions the joint single-cell and bulk genotype space into seven mutually exclusive events. The latter span three diploid allele frequencies ($\theta_s \in \{0, 0.5, 1\}$) for the single cell and a discretized bulk allele frequency $\theta_b \in [0,1]$. These events capture homozygous reference and alternative genotypes, heterozygosity, allele dropout in both directions, and sequencing errors in both directions. To account for whole-genome amplification artifacts in the single cell, ProSolo incorporates the coverage-dependent beta-binomial model of \textcite{lodato2015}, which was fitted to empirical MDA data and captures allelic imbalance through a mixture of beta-binomial distributions whose shape parameters are linear functions of read depth.
+While these methods enable \textit{de novo} SNV discovery from isolated single-cell experiments, tumor sequencing increasingly comprises multiple data modalities, including contemporaneous scDNA-seq and bulk DNA-seq.~\cite{rozenblatt-rosen2020,leighton2023,chen2025,zhang2023} \textcite{lahnemann2021} were the first to attempt bulk-informed variant calling with \textit{ProSolo}, which probabilistically genotypes variants in single-cell data using bulk data as a prior. ProSolo builds on the Bayesian framework Varlociraptor~\cite{koester2020} and partitions the joint single-cell and bulk genotype space into seven mutually exclusive events. More specifically, the model assumes one of three diploid allele frequencies ($\theta_s \in \{0, 0.5, 1\}$) for every single cell and a discretized bulk allele frequency $\theta_b \in [0,1]$. Corresponding events capture homozygous reference and alternative genotypes, heterozygosity, allelic dropout in both directions, and sequencing errors in both directions. To account for whole-genome amplification artifacts in the single cell, ProSolo's error model is based off of the coverage-dependent beta-binomial model of \textcite{lodato2015}, which was fitted to empirical multiple displacement amplification (MDA) data and captures allelic imbalance through a mixture of beta-binomial distributions whose shape parameters are linear functions of read depth.
 
-Despite its sophistication, ProSolo makes two strong assumptions that are frequently violated in cancer genomics data. First, all sites are assumed to be diploid: the Lodato model restricts the true single-cell allele frequency to $\theta_s \in \{0, 0.5, 1\}$, preventing it from representing non-diploid copy number states commonly encountered in tumor genomes. Second, all variants are assumed to be clonal ($\text{CCF} = 1$), so that the bulk allele frequency directly reflects the genotype rather than being modulated by subclonal structure. These simplifications can lead to miscalibrated posteriors for subclonal variants at loci with copy number alterations.
+Despite its sophistication, ProSolo makes two strong assumptions that are frequently violated in cancer genomics data. First, all sites are assumed to be diploid: the Lodato model restricts the true single-cell allele frequency to $\theta_s \in \{0, 0.5, 1\}$, making it unable to represent non-diploid copy number states. The latter, however, are frequently encountered in tumor genomes. Second, all variants are assumed to be clonal ($\text{CCF} = 1$), so that the bulk allele frequency directly reflects the genotype rather than being modulated by subclonal structure. These simplifications can lead to miscalibrated posteriors for subclonal variants at loci with copy number alterations.
 
-Here, we develop SC-BIG, a method to leverage complementary bulk sequencing data to estimate variant presence in individual single cells. Given bulk tumor sequencing, scDNA-seq data, and a set of hSNPs from, for example, an accompanying normal sample, we compute the probability that a specific candidate mutation observed in bulk is present in a certain cell. SC-BIG relaxes both of ProSolo's key assumptions: it supports copy number states $C \in \{1, \ldots, 10\}$ with arbitrary multiplicity $m \leq C$, and it explicitly models subclonal variants by marginalizing over cancer cell fraction. Because CCF suffers from inherent undecidability, a respective prior is estimated from a pseudo-bulk. To simplify the inference algorithm, we assume that all cells are malignant, which can usually be determined through orthogonal data like copy number changes, and focus on variant presence rather than estimating an exact variant allele frequency (VAF). We use simulated data to provide a proof of principle and show that SC-BIG performs favorably compared to both naive VAF thresholding and the ProSolo implementation of \textcite{lahnemann2021}.
+Here, we develop SC-BIG, a method to leverage complementary bulk sequencing data to estimate variant presence in individual single cells. Given bulk tumor sequencing, scDNA-seq data, and optionally a set of hSNPs from, for example, an accompanying normal sample, we compute the probability that a specific candidate mutation observed in bulk is present in a single cell. SC-BIG relaxes both of ProSolo's key assumptions: it supports copy number states $C \in \{1, \ldots, 10\}$ with arbitrary multiplicity $m \leq C$, and it explicitly models subclonal variants by marginalizing over cancer cell fraction. Because CCF suffers from inherent undecidability, a prior is estimated from a pseudo-bulk. To simplify the inference algorithm, we assume that all cells are malignant, which can usually be determined through orthogonal data like copy number changes, and focus on variant presence rather than estimating an exact variant allele frequency (VAF). We use simulated data to provide a proof of principle and show that SC-BIG performs favorably compared to both naive VAF thresholding and the ProSolo implementation of \textcite{lahnemann2021}.
 
 \section{Methods}
 
-SC-BIG takes as input bulk and single-cell read counts at a candidate variant site, together with read counts at nearby germline heterozygous SNPs (Figure~\ref{fig:input-data}). The inference proceeds in four steps (Figure~\ref{fig:graphical-abstract}). First, amplification bias is quantified by fitting a beta-binomial model to pooled germline SNP data across all cells. Second, an empirical prior on cancer cell fraction (CCF) is constructed from the aggregate fraction of cells showing variant reads. Third, a CCF posterior is obtained from bulk data by marginalizing over copy number, multiplicity, and tumor purity via MCMC. Fourth, per-cell variant probabilities are computed by combining the CCF posterior with a single-cell likelihood that accounts for amplification bias under one of two error models: a technology-agnostic beta-binomial or the MDA-specific model of \textcite{lodato2015}. Because each cell is scored independently given the shared bulk posterior, inference is fully parallelizable.
+SC-BIG infers the probability that a variant of interest is present in a specific single cell, given bulk evidence. As an input it takes bulk and single-cell read counts at a candidate mutation site, together with estimates of bulk copy number $CN$, tumor purity ($\pi$), sequencing error $\epsilon$, and optionally read counts at nearby germline heterozygous SNPs (hSNPs; see Table~\ref{fig:input-data-and-network}, Figure~\ref{fig:parameter-illustration} in the Appendix). Inference of variant presence then proceeds in three steps (Figure~\ref{fig:graphical-abstract}). First, an empirical prior on cancer cell fraction (CCF) is constructed from the aggregate fraction of cells showing variant reads. Second, a CCF posterior is obtained from bulk data by marginalizing over $CN$, multiplicity $m$, and $\pi$ via a Markov Chain Monte Carlo (MCMC) procedure. Third, per-cell variant probabilities are computed by combining the CCF posterior with a single-cell likelihood that accounts for amplification bias under an error model. To this end, SC-BIG implements its own simple, technology-agnostic beta-binomial model for which it uses hSNPs as well as the MDA-specific model of \textcite{lodato2015}.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.75\textwidth]{graphical_abstract/graphical_abstract.pdf}
-    \caption{\textbf{SC-BIG method overview.} Starting from sparse single-cell reads at a candidate variant site (top), the method constructs an empirical CCF prior from single-cell aggregates and a VAF matrix across cells and variants (middle row, left and right). Bulk read counts and amplification bias estimated from germline heterozygous SNPs ($\tau$ estimation) are combined with the CCF prior to obtain a CCF posterior via MCMC (bottom left). Per-cell variant probabilities are computed by integrating the CCF posterior with single-cell likelihoods, yielding a probability matrix (middle row, right) and improved classification performance (bottom right, ROC curve).}
+    \caption{\textbf{SC-BIG method overview.} Starting from sparse single-cell reads at a candidate variant site (top), the method constructs an empirical CCF prior from single-cell aggregates and a VAF matrix across cells and variants (second row). Bulk read counts are combined with the CCF prior to obtain a CCF posterior via MCMC. Then, per-cell variant probabilities are computed based on observed reads, an error model, and the CCF posterior. As an output, SC-BIG yields a probability matrix (middle row, right) that can be used for well-calibrated classification (bottom right).}
     \label{fig:graphical-abstract}
 \end{figure}
 
@@ -99,18 +106,14 @@ SC-BIG takes as input bulk and single-cell read counts at a candidate variant si
         \hline
         \textbf{Parameter} & \textbf{Symbol} & \textbf{Description} \\
         \hline
-        Purity (mean) & $\bar{\pi}$ & Mean estimate for bulk sample purity \\
-        Purity (std) & $\sigma_{\pi}$ & Standard deviation estimate for bulk sample purity \\
-        Copy number (mean) & $\bar{C}$ & Mean estimate for copy number at candidate site \\
-        Copy number (std) & $\sigma_C$ & Standard deviation estimate for copy number \\
-        Bulk variant reads & $k_b$ & Number of reads supporting variant in bulk \\
-        Bulk total reads & $n_b$ & Total number of reads at candidate site in bulk \\
-        Single-cell variant reads & $k_{sc,i}$ & Variant reads at candidate site in cell $i$ \\
-        Single-cell total reads & $n_{sc,i}$ & Total reads at candidate site in cell $i$ \\
+        Purity (mean, std) & $\bar{\pi}$, $\sigma_{\pi}$ & Estimate for bulk purity \\
+        Copy number (mean, std) & $\bar{C}$, $\sigma_C$ & Estimate for copy number at candidate site \\
+        Bulk reads (variant/total) & $k_b$, $n_b$ & Variant/total reads at candidate site in bulk \\
+        Single-cell reads (variant/total) & $k_{sc,i}$, $n_{sc,i}$ & Variant/total reads at candidate site in cell $i$ \\
         Germline SNPs & $\mathcal{H}$ & Set of heterozygous SNPs $\{(k_{g,j}, n_{g,j})\}$ \\
-        & & within reasonable (e.g. $\pm 50$ kb) genomic window \\
+        & & within some (e.g. $\pm 50$ kb) genomic window \\
         Sequencing error rate & $\epsilon_{sc}$ & Global single-cell sequencing error probability \\
-        Bulk concentration & $\kappa$ & Overdispersion parameter for bulk data \\
+        Bulk concentration & $\kappa$ & Overdispersion parameter for bulk read counts \\
         \hline
         \end{tabular}
     \end{minipage}
@@ -120,14 +123,14 @@ SC-BIG takes as input bulk and single-cell read counts at a candidate variant si
     \begin{minipage}{\textwidth}
         \raggedright\textbf{b.}\\[0.5em]
         \centering
-        \includegraphics[width=0.9\textwidth]{parameter_illustration.png}
+        \includegraphics[width=0.9\textwidth]{bayesian_network.png}
     \end{minipage}
 
-    \caption{\textbf{Model inputs and biological context.} (a) Required input data for SC-BIG. (b) Biological interpretation of model parameters. The bulk tumor contains a mixture of cancer and normal cells, with only a fraction of cancer cells harboring the variant (CCF). Copy number state $C$, purity $\pi$, and variant read counts $k$ are sampled with uncertainty. Germline SNPs $\mathcal{H}$ provide amplification bias estimate.}
-    \label{fig:input-data}
+    \caption{\textbf{Model overview.} (a) Required input data for SC-BIG. (b) Bayesian network diagram. Double circles indicate primary inference targets. Shaded and unshaded circles represent observed and latent random variables, respectively. Rectangles represent fixed input data.}
+    \label{fig:input-data-and-network}
 \end{figure}
 
-SC-BIG infers the probability that a variant of interest is present in a specific single cell, given bulk evidence. To do so, we let $z \in \{0, 1\}$ indicate variant presence in a single cell:
+We will now describe the SC-BIG model in more detail. Figure~\ref{fig:input-data-and-network} provides the corresponding Bayesian network diagram. Let $z \in \{0, 1\}$ indicate variant presence in a single cell:
 
 \begin{equation}
     z =
@@ -137,7 +140,7 @@ SC-BIG infers the probability that a variant of interest is present in a specifi
     \end{cases}
 \end{equation}
 
-The posterior probability of variant presence then is
+We assume that the posterior probability of variant presence depends on both single-cell and bulk data ($D_{sc}$ and $D_{b}$):
 
 \begin{equation}
     P(z | D_{sc}, D_{b}) = \frac{
@@ -149,7 +152,7 @@ The posterior probability of variant presence then is
 \label{eq:base-model-1}
 \end{equation}
 
-where the probability depends on both single-cell data $D_{sc}$ and bulk evidence $D_{b}$. For the $z = 1$ case, we assume
+Let us first consider the case of $z = 1$. Under SC-BIG's model, $D_{sc}$ comprises the number of total and variant reads and bulk evidence $D_{b}$ is quantified via the latent cancer cell fraction. The latter we thus marginalize over:
 
 \begin{equation}
     P(z=1 | k_{sc}, n_{sc}, D_{b}) = \int_{0}^{1} P(z=1 | k_{sc}, n_{sc}, \text{CCF}) \cdot P(\text{CCF} | D_b)\,d\text{CCF}
@@ -157,8 +160,7 @@ where the probability depends on both single-cell data $D_{sc}$ and bulk evidenc
 \label{eq:hierarchical-marginalization}
 \end{equation}
 
-Because cancer cell fraction (CCF) is a latent variable inferred from bulk data, we marginalize over its posterior distribution.
-Crucially, $P(z=1 | k_{sc}, n_{sc}, \text{CCF})$ is computed as follows for a given CCF value:
+To calculate these terms, we make the key assumption that $P(z=1 | \text{CCF}) = \text{CCF}$: A malignant cell harbors the mutation with a probability equal to the variant's cellular prevalence in the bulk sample. Marginalizing over $P(\text{CCF} | D_b)$ in equation~\eqref{eq:hierarchical-marginalization} then propagates uncertainty from bulk to single-cell inference. For a given CCF value, we use Bayes' theorem once more to compute $P(z=1 | k_{sc}, n_{sc}, \text{CCF})$ as
 
 \begin{equation}
     P(z=1 | k_{sc}, n_{sc}, \text{CCF}) = \frac{
@@ -170,16 +172,7 @@ Crucially, $P(z=1 | k_{sc}, n_{sc}, \text{CCF})$ is computed as follows for a gi
 \label{eq:posterior-given-ccf}
 \end{equation}
 
-The key assumption in equation~\eqref{eq:posterior-given-ccf} is that $P(z=1 | \text{CCF}) = \text{CCF}$, meaning that the probability of a malignant cell harboring the mutation equals the fraction of bulk cancer cells harboring it. Marginalizing over $P(\text{CCF} | D_b)$ in equation~\eqref{eq:hierarchical-marginalization} propagates uncertainty from bulk to single-cell inference.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{bayesian_network.png}
-    \caption{\textbf{Bayesian network representation of the hierarchical model.} Double circles indicate primary inference targets. Shaded and unshaded circles represent observed and latent random variables, respectively. Rectangles represent fixed input data.}
-    \label{fig:bayesian-network}
-\end{figure}
-
-Next, the likelihood terms in equation~\eqref{eq:posterior-given-ccf} are defined as:
+Next, the single-cell likelihood terms $P(k_{sc} | n_{sc}, z \in {0,1})$ in equation~\eqref{eq:posterior-given-ccf} are defined in either one of two ways. We will start with the simpler error model implemented by SC-BIG to facilitate simulation and increase applicability across single-cell sequencing technologies:
 
 \begin{equation}
     P(k_{sc} | n_{sc}, z) =
@@ -190,13 +183,9 @@ Next, the likelihood terms in equation~\eqref{eq:posterior-given-ccf} are define
 \label{eq:z-likelihood}
 \end{equation}
 
-The beta-binomial likelihood for variant-present cells ($z=1$) accounts for amplification bias. Whole-genome amplification introduces stochastic allelic imbalance that causes read counts to deviate from binomial expectations~\cite{dong2017,luquette2019}. This overdispersion manifests as an increased probability of allelic dropout ($k_{sc} \approx 0$) and preferential amplification ($k_{sc} \approx n_{sc}$). We estimate amplification bias from germline heterozygous SNPs (hSNPs), assuming a 1:1 allelic ratio. While this assumption simplifies inference, it might not hold for loci affected by copy number changes. Additionally, we do not investigate genomic windows suitable for the estimation procedure described below, but a method akin to the one described in \textcite{luquette2019} could be used for this purpose in a future version of SC-BIG.
+The beta-binomial likelihood accounts for amplification bias, because whole-genome amplification introduces stochastic deviations from binomial expectations~\cite{dong2017,luquette2019}. We estimate distribution parameters from germline heterozygous SNPs (hSNPs), assuming a 1:1 allelic ratio. While this assumption simplifies inference, it might not hold for loci affected by copy number changes. Additionally, we do not investigate genomic windows suitable for the estimation procedure described below, but a method akin to the one described in \textcite{luquette2019} could be used for this purpose in a future version of SC-BIG.
 
-The beta-binomial parameters $\alpha$ and $\beta$ (defined in equation~\eqref{eq:alpha-beta-from-tau} below) are decomposed into two components: a \textit{concentration parameter} $\tau = \alpha + \beta$ that quantifies amplification bias strength, and an \textit{expected VAF} $\alpha/(\alpha+\beta) = m/C$ determined by copy number $C$ and multiplicity $m$. This parameterization preserves the biologically expected mean VAF while capturing overdispersion---low $\tau$ indicates high amplification bias with greater variance around the expected VAF, including dropout events, whereas high $\tau$ approaches binomial behavior.
-
-We estimate a population-level $\tau$ from germline heterozygous SNPs pooled across all cells. Since hSNPs have known 1:1 allelic ratio in diploid regions, their observed VAF variance directly reflects amplification bias. We fit a symmetric beta-binomial ($\alpha = \beta = \tau/2$, expected VAF = 0.5) via maximum likelihood to the pooled data, yielding a single $\tau$ used for all cells. Such a population estimate is more robust compared to using per-cell observations and yields good downstream performance in our simulations.
-
-Given $\tau$, we parameterize the somatic variant beta-binomial as:
+For inference, beta-binomial parameters $\alpha$ and $\beta$ are decomposed into the concentration parameter $\tau = \alpha + \beta$ that quantifies strength of amplification bias and an expected VAF $\alpha/(\alpha+\beta) = m/C$ determined by copy number $C$ and multiplicity $m$. This parameterization preserves the biologically expected mean VAF while capturing overdispersion. To identify $\tau$, our estimation procedure uses pooled hSNPs across all available single cells and fits a symmetric beta-binomial ($\alpha = \beta = \tau/2$) via maximum likelihood estimation. In summary, given the resulting $\tau$, we parameterize the somatic variant beta-binomial as:
 
 \begin{equation}
     \alpha = \tau \cdot \frac{m}{C}
@@ -205,11 +194,11 @@ Given $\tau$, we parameterize the somatic variant beta-binomial as:
     ,
 \label{eq:alpha-beta-from-tau}
 \end{equation}
+
 ensuring mean VAF = $m/C$ while $\tau$ captures population-level overdispersion.
 
-As an alternative to the beta-binomial error model described above, SC-BIG supports the coverage-dependent amplification bias model of \textcite{lodato2015}, which was developed for MDA-amplified single cells and is used by ProSolo.~\cite{lahnemann2021} This model captures allelic imbalance through mixture beta-binomial distributions whose shape parameters are linear functions of read depth, fitted to empirical MDA data.
+Importantly, a single beta-binomial might not fully capture amplification bias and parameter estimation might not be feasible for real data. Thus, SC-BIG supports the coverage-dependent amplification bias model of \textcite{lodato2015} as a well established alternative for MDA data. It uses a mixture of beta-binomial distributions with shape parameters that are linear functions of read depth. Because the Lodato model is defined only for diploid allele frequencies $\theta_s \in \{0, 0.5, 1\}$, we map the true allele frequency $m/C$ to the nearest supported value:
 
-Since the Lodato model is defined only for diploid allele frequencies $\theta_s \in \{0, 0.5, 1\}$, we map the true allele frequency $m/C$ to the nearest supported value:
 \begin{equation}
     \theta_s = \begin{cases}
         0   & \text{if } m/C \leq 0.25 \\
@@ -219,32 +208,26 @@ Since the Lodato model is defined only for diploid allele frequencies $\theta_s 
 \label{eq:lodato-af-mapping}
 \end{equation}
 
-For each $\theta_s$, the model specifies a distribution over a distorted allele frequency $\rho_s$ via coverage-dependent beta-binomial parameters, and the per-read likelihood is evaluated at $\rho_s$ using a binomial model with base error rate $e$:
+For a given $\theta_s$, SC-BIG follows ProSolo's model by specifying a distribution over a distorted allele frequency $\rho_s$. Per-read likelihood is evaluated at $\rho_s$ using a binomial model with base error rate $e$ and combined with Lodato's coverage-dependent beta-binomial likelihood
 
 \begin{equation}
     P(k_{sc} | n_{sc}, z=1) = \sum_{k_s=0}^{n_{sc}^*}
         P_{\text{read}}(k_{sc} | n_{sc}, \rho_s = k_s / n_{sc}^*)
         \cdot P_{\text{Lodato}}(k_s | n_{sc}^*, \theta_s)
-    ,
+    .
 \label{eq:lodato-likelihood}
 \end{equation}
 
-where $n_{sc}^* = \min(n_{sc}, 100)$ is the coverage cap used in the original model, $P_{\text{Lodato}}$ is the Lodato beta-binomial PMF, and $P_{\text{read}}$ is the per-read likelihood:
+$n_{sc}^* = \min(n_{sc}, 100)$, because the Lodato model caps coverage at $n_{sc} = 100$, and $P_{\text{Lodato}}$ is the Lodato beta-binomial probability mass function. $P_{\text{read}}$ is the per-read likelihood defined by ProSolo:
 
 \begin{equation}
     P_{\text{read}}(k | n, \rho) = \binom{n}{k} \left[\rho(1-e) + (1-\rho)\frac{e}{3}\right]^k \left[(1-\rho)(1-e) + \rho\frac{e}{3}\right]^{n-k}
     .
 \end{equation}
 
-At the heterozygous allele frequency ($\theta_s = 0.5$), the Lodato model uses a mixture of two symmetric beta-binomial distributions to capture the bimodal read count distribution characteristic of MDA. At homozygous frequencies ($\theta_s \in \{0, 1\}$), a single beta-binomial with asymmetric parameters models the dropout and error behavior. All parameters are linear functions of coverage, fitted from the empirical data of \textcite{lodato2015} and taken with full precision from the \texttt{libprosic} v0.7.3 source code.
+All parameters are taken from ProSolo's source code. When the Lodato model is used, the variant-absent likelihood $P(k_{sc} | n_{sc}, z=0)$ is also computed via equation~\eqref{eq:lodato-likelihood} with $\theta_s = 0$, rather than the simple binomial of equation~\eqref{eq:z-likelihood}, ensuring that both $z=1$ and $z=0$ likelihoods account for amplification artifacts consistently. In summary, this error model is well-characterized for MDA-amplified data and enables direct comparison with ProSolo, because SC-BIG can use it during inference as well as simulation. The beta-binomial model of equation~\eqref{eq:alpha-beta-from-tau}, which makes no amplification-technology-specific assumptions, serves as a fall-back for scDNA-seq technologies where the amplification process is less well studied than MDA, such as PTA or DLP+.
 
-This Lodato error model is well-characterized for MDA-amplified data and enables direct comparison with ProSolo under identical per-read error modeling. However, even when SC-BIG adopts the same Lodato likelihood, several structural differences remain between the two methods. First, SC-BIG marginalizes over a cancer cell fraction posterior inferred from bulk data (equation~\eqref{eq:hierarchical-marginalization}), whereas ProSolo assumes all variants are clonal ($\text{CCF} = 1$) and does not model subclonal structure. Second, SC-BIG supports non-diploid copy number states $C \in \{1, \ldots, 10\}$ with arbitrary multiplicity $m \leq C$; the Lodato allele frequencies are obtained by mapping $m/C$ to the nearest value in $\{0, 0.5, 1\}$ (equation~\eqref{eq:lodato-af-mapping}), preserving the empirically fitted per-read model while permitting copy number variation that ProSolo's strictly diploid framework cannot represent. Third, SC-BIG constructs an empirical CCF prior from single-cell aggregates (equation~\eqref{eq:ccf-prior}), providing an independent source of information absent from ProSolo. Fourth, SC-BIG jointly marginalizes over tumor purity $\pi$ and a geometric multiplicity prior $P(m|C) \propto 2^{-m}$, both of which modulate the expected bulk VAF and thus the CCF posterior; ProSolo uses a flat prior over its seven genotype events and does not model purity. These differences mean that, despite sharing the same per-read error model, SC-BIG and ProSolo can produce substantially different posteriors---particularly for subclonal variants at loci with copy number alterations.
-
-The beta-binomial model of equation~\eqref{eq:alpha-beta-from-tau}, which makes no amplification-technology-specific assumptions, serves as a fall-back for scDNA-seq technologies where the amplification process is less well studied than MDA, such as PTA or DLP+.
-
-To compute equation~\eqref{eq:hierarchical-marginalization}, we need the CCF posterior $P(\text{CCF} | D_b)$. Bulk sequencing provides evidence about population-level CCF, but uncertainty in variant multiplicity $m$ potentially creates a multimodal posterior. For example, a bulk VAF of 0.4 is consistent with both $m=1, \text{CCF} \approx 0.8$ (heterozygous variant in 80\% of cells) and $m=2, \text{CCF} \approx 0.4$ (homozygous variant in 40\% of cells). This multiplicity ambiguity substantially affects individual cell posteriors, particularly for dropout events where different multiplicity assumptions yield different likelihood values.
-
-The expected bulk variant allele frequency depends on purity $\pi$, copy number $C$, multiplicity $m$, and CCF~\cite{tarabichi2021}:
+To compute equation~\eqref{eq:hierarchical-marginalization}, we need the CCF posterior $P(\text{CCF} | D_b)$. Bulk sequencing provides evidence about population-level CCF, but uncertainty in variant multiplicity $m$ potentially creates a multimodal posterior. For example, a bulk VAF of 0.4 is consistent with both $m=1, \text{CCF} \approx 0.8$ (heterozygous variant in 80\% of cells) and $m=2, \text{CCF} \approx 0.4$ (homozygous variant in 40\% of cells). This is because the expected bulk variant allele frequency depends on $\pi$, $C$, $m$, and CCF as follows~\cite{tarabichi2021}:
 \begin{equation}
     \text{VAF}_{\text{exp}} = \frac{
         \pi \cdot \text{CCF} \cdot m
@@ -252,39 +235,23 @@ The expected bulk variant allele frequency depends on purity $\pi$, copy number 
         \pi \cdot C + 2 (1-\pi)
     }
     .
+\label{eq:vaf-expected}
 \end{equation}
 
-The bulk likelihood is modeled as:
+On the other hand, the likelihood of observing $k_b$ bulk variant reads is computed as:
 \begin{equation}
     P(k_b | n_b, \text{CCF}, m, \pi, C) = \text{BetaBinomial}(k_b; n_b, \alpha, \beta)
     ,
 \end{equation}
-with $\alpha = \kappa \cdot \text{VAF}_{\text{exp}}$, $\beta = \kappa \cdot (1-\text{VAF}_{\text{exp}})$, and $\kappa$ being a concentration parameter for bulk overdispersion.
+with $\alpha = \kappa \cdot \text{VAF}_{\text{exp}}$, $\beta = \kappa \cdot (1-\text{VAF}_{\text{exp}})$, and $\kappa$ being a concentration parameter for bulk overdispersion. It is currently provided as a hyperparameter, but a future version of SC-BIG might estimate $\kappa$ from input data directly.
 
-We place priors on the latent parameters. For copy number:
+Consequently, CCF posterior estimation will have a major impact on inference accuracy in SC-BIG. Whereas the CCF prior $P(\text{CCF})$ can be set to uniform, we can also leverage single-cell aggregate statistics to obtain a more informative, empirical prior. The fraction of single cells showing variant reads provides evidence about population-level CCF independent of multiplicity. Thus, we implement the following Beta distribution as an alternative to a uniform CCF prior:
 \begin{equation}
-    P(C) = \frac{
-        \exp\left(-\frac{(C - \bar{C})^2}{2\sigma_C^2}\right)
-    }{
-    \sum_{j=1}^{10}{\exp\left(-\frac{(j - \bar{C})^2}{2\sigma_C^2}\right)}
-    }, \quad C \in \{1, 2, \ldots, 10\}
+    P(\text{CCF}) = \text{Beta}(\text{CCF} \mid k_{\text{pos}} + 1, \, n_{\text{elig}} - k_{\text{pos}} + 1)
+    .
+\label{eq:ccf-prior}
 \end{equation}
-(a truncated discrete normal). For purity:
-\begin{equation}
-    P(\pi) = \mathcal{N}(\pi; \bar{\pi}, \sigma_{\pi}), \quad \pi \in [0.01, 0.99]
-    ,
-\end{equation}
-where values are clamped to $[0.01, 0.99]$ for numerical stability. For multiplicity:
-\begin{equation}
-    P(m | C) = \begin{cases}
-        \frac{1}{C} & \text{(uniform prior)} \\
-        \frac{2^{-m}}{\sum_{l=1}^{C} 2^{-l}} & \text{(geometric prior)}
-    \end{cases}, \quad m \in \{1, 2, \ldots, C\}
-\end{equation}
-
-The geometric prior $P(m|C) \propto 2^{-m}$ favors lower multiplicities, reflecting the expectation that most somatic variants are heterozygous ($m=1$). For $C=2$, this assigns $P(m=1|C=2) = 2/3$ and $P(m=2|C=2) = 1/3$. The geometric prior is used by default.
-
-The CCF posterior is obtained by marginalizing over $\pi$, $C$, and $m$:
+$k_{\text{pos}}$ is the number of cells with at least one variant read ($k_{sc} \geq 1$) and $n_{\text{elig}}$ is the total number of cells with sufficient coverage ($n_{sc} \geq 3$). This formulation provides natural regularization because with little reliable single-cell data, the prior converges to $\text{Beta}(1, 1)$, which is equivalent to a uniform prior over $[0, 1]$. Given either one of the CCF priors, the CCF posterior is obtained by marginalizing over $\pi$, $C$, and $m$:
 
 \begin{equation}
 \begin{gathered}[t]
@@ -313,25 +280,161 @@ The CCF posterior is obtained by marginalizing over $\pi$, $C$, and $m$:
 \label{eq:ccf-posterior}
 \end{equation}
 
-In practice, we approximate these integrals using hybrid MCMC: for each discrete $(C, m)$ combination, we sample continuous parameters $(\text{CCF}, \pi)$ from the conditional posterior using NUTS (No-U-Turn Sampler)~\cite{hoffman2011}. Each MCMC sample receives a weight proportional to $P(C) \cdot P(m|C) \cdot P(k_b | n_b, \text{CCF}, \pi, C, m)$, ensuring parameter combinations that better explain bulk data receive higher weight. The hierarchical marginalization is computed as a weighted average over posterior samples.
-
-The CCF prior $P(\text{CCF})$ in equation~\eqref{eq:ccf-posterior} can be set to uniform, but we can leverage single-cell aggregate statistics to obtain an informative prior. While individual cells have sparse coverage, the \textit{aggregate fraction} of cells showing variant reads provides evidence about population-level CCF independent of multiplicity.
-
-We model the CCF prior as a Beta distribution conjugate to the binomial likelihood of single-cell observations:
+The prior distributions for $C$, $\pi$, and $m$ are specified as follows:
 \begin{equation}
-    P(\text{CCF}) = \text{Beta}(\text{CCF} \mid k_{\text{pos}} + 1, \, n_{\text{elig}} - k_{\text{pos}} + 1)
+    P(C) = \frac{
+        \exp\left(-\frac{(C - \bar{C})^2}{2\sigma_C^2}\right)
+    }{
+    \sum_{j=1}^{10}{\exp\left(-\frac{(j - \bar{C})^2}{2\sigma_C^2}\right)}
+    }, \quad C \in \{1, 2, \ldots, 10\}
     ,
-\label{eq:ccf-prior}
 \end{equation}
-where $k_{\text{pos}}$ is the number of cells with at least one variant read ($k_{sc} \geq 1$) and $n_{\text{elig}}$ is the total number of cells with sufficient coverage ($n_{sc} \geq 3$).
 
-This formulation provides natural regularization. In the limit of sparse or missing single-cell data ($n_{\text{elig}} \to 0$), the prior converges to $\text{Beta}(1, 1)$, equivalent to a uniform prior over $[0, 1]$, ensuring that inference is driven solely by bulk likelihoods when single-cell evidence is weak. As single-cell coverage increases, the prior tightens around the observed cellular prevalence, guiding the resolution of multiplicity ambiguities without imposing hard constraints.
+\begin{equation}
+    P(\pi) = \mathcal{N}(\pi; \bar{\pi}, \sigma_{\pi}), \quad \pi \in [0.01, 0.99]
+    ,
+\end{equation}
+and
+\begin{equation}
+    P(m | C) = \begin{cases}
+        \frac{1}{C} & \text{(uniform prior)} \\
+        \frac{2^{-m}}{\sum_{l=1}^{C} 2^{-l}} & \text{(geometric prior)}
+    \end{cases}, \quad m \in \{1, 2, \ldots, C\}
+    .
+\end{equation}
 
-Because single-cell genotyping suffers from allelic dropout, this empirical prior is conservative: it may underestimate CCF when dropout leads to under-counting of variant-positive cells. We believe this conservative behavior is acceptable because the bulk data provides complementary evidence that can correct for dropout-induced bias during posterior inference.
+The geometric prior $P(m|C) \propto 2^{-m}$ favors lower multiplicities, reflecting the expectation that most somatic variants are heterozygous ($m=1$), and is used by default and for all inference runs presented in this manuscript. Algorithm~\ref{alg:inference} in the Appendix summarizes the complete inference procedure.
 
-\subsection{Algorithm Summaries}
+\subsection{Simulation Design}
 
-Algorithm~\ref{alg:inference} summarizes the complete inference procedure.
+Algorithm~\ref{alg:simulation} in the Appendix is used to generate synthetic data for validation. In summary, to produce a realistic distribution of cellular prevalences, we use the Kingman coalescent~\cite{wu2021}. Starting from $N$ leaf nodes, pairs of lineages are merged backwards in time with coalescence times drawn from $\text{Exp}\binom{n}{2}/N_e$, where $n$ is the current number of lineages and $N_e$ is the effective population size. A stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ is assigned to the root, representing the time from tumor founding to the most recent common ancestor. This way, clonal mutations can be generated, too. $M$ somatic mutations are placed on branches proportional to branch length, but because coalescent trees concentrate most branch length near the leaves, an optional uniform-CCF reweighting spreads mutations across the full CCF spectrum: eligible branches are grouped into $K$ equal-width CCF bins and the sampling weight of branch $i$ in bin $b$ becomes
+
+\begin{equation}
+    w_i = \frac{\ell_i}{\sum_{i' \in b} \ell_{i'}} \cdot \frac{1}{K_{\neq\emptyset}}
+    \label{eq:ccf-reweight}
+    ,
+\end{equation}
+
+where $\ell_i$ is the branch length and $K_{\neq\emptyset}$ is the number of non-empty bins. This preserves relative branch-length weighting within each CCF stratum while equalizing total probability across strata. Copy number $C_j \in \{1, 2, 3\}$ at each locus is drawn from a categorical distribution and multiplicity is sampled from a geometric prior $P(m_j | C_j) \propto 2^{-m_j}$, $m_j \in \{1, \ldots, C_j\}$, consistent with the inference model. Branches yielding $\text{CCF} < 0.05$ are redrawn to avoid degenerate cases where sparse single-cell coverage is uninformative. Additionally, for each mutation, bulk reads are drawn from a beta-binomial with the expected VAF and single-cell reads are drawn depending on the chosen error model. With the beta-binomial model, a locus-specific mean concentration $\mu_\tau$ is drawn uniformly from $[\mu_{\tau,\min}, \mu_{\tau,\max}]$ for each mutation to reflect genomic variation in amplification efficiency, and each cell's concentration is then drawn as $\tau_i \sim \text{Gamma}(\mu_\tau, \text{CV}_\tau)$. This per-cell $\tau_i$ determines overdispersion for both germline SNPs and somatic variants, ensuring that bias estimated from hSNPs transfers to variant calls.
+
+With the Lodato model, single-cell reads are generated in two steps. First, the Lodato amplification model produces a distorted read count at the mapped allele frequency $\theta_s$ (equation~\eqref{eq:lodato-af-mapping}). Then, per-read sequencing error at rate $\epsilon_{sc}$ is applied, matching the generative process of equation~\eqref{eq:lodato-likelihood}.
+
+\subsection{Implementation \& Evaluation}
+
+SC-BIG is available as an open-source package at \url{https://bitbucket.org/schwarzlab/tool-sc-big} under the GNU General Public License v3. The model is implemented as a Python package providing both a library API and command-line interface with subcommands for simulation (\texttt{simulate}, \texttt{simulate-tree}), inference (\texttt{infer}, \texttt{infer-prosolo}), and method comparison (\texttt{compare}). All simulation hyperparameters and inference settings are configurable via command-line arguments.
+
+Bayesian inference uses Pyro~\cite{bingham2019}, a probabilistic programming library built on PyTorch. Pyro enables direct specification of the hierarchical model structure and provides a NUTS (No-U-Turn Sampler) implementation~\cite{hoffman2011} for sampling of continuous parameters. Discrete parameters are enumerated and each MCMC sample receives a weight proportional to $P(C) \cdot P(m|C) \cdot P(k_b | n_b, \text{CCF}, \pi, C, m)$. The hierarchical marginalization is computed as a weighted average over posterior samples. Single-cell inference is parallelizable across cells since each posterior probability is computed independently given bulk data, enabling efficient multi-core execution.
+
+For comparison with ProSolo, the \texttt{infer-prosolo} subcommand generates synthetic BAM files from the simulated read counts using \texttt{pysam} and invokes the ProSolo v0.6.1 binary as a subprocess. For each cell at each mutation site, a minimal reference FASTA, candidate VCF, bulk BAM, and single-cell BAM are created, with base qualities set to the Phred score corresponding to the simulated error rate ($Q = -10\log_{10}(e)$). Importantly, when the Lodato error model is selected, the simulation generates single-cell reads from the same two-step process that ProSolo assumes internally. The seven PHRED-scaled event posteriors emitted by ProSolo are converted to linear probabilities, and $P(\text{alt present})$ is computed as the union over the five alt-present events (HET, HOM\_ALT, ADO\_TO\_REF, ADO\_TO\_ALT, ERR\_REF), following equation~9 of \textcite{lahnemann2021}.
+
+We evaluate classification performance using the complementary metrics. ROC-AUC (area under the receiver operating characteristic curve) is defined as follows:
+
+\begin{equation}
+    \text{ROC-AUC} = \int_0^1 \text{TPR}(\text{FPR}^{-1}(t)) \, dt
+    ,
+\end{equation}
+
+where TPR (true positive rate) $= \text{TP}/(\text{TP}+\text{FN})$ and FPR (false positive rate) $= \text{FP}/(\text{FP}+\text{TN})$. Precision-recall AUC (PR-AUC) is defined analogously as the area under the precision--recall curve, where precision $= \text{TP}/(\text{TP}+\text{FP})$ and recall $= \text{TPR}$.
+
+\section{Results}
+
+We evaluated SC-BIG on a simulated population of $N = 1000$ cells with $M = 200$ somatic mutations spanning the full CCF spectrum. Table~\ref{tab:simulation-parameters} summarizes the simulation and inference parameters used. Both procedures use the Lodato error model and for method comparisons, we present SC-BIG, ProSolo, and a naive caller that scores each cell by its observed VAF ($k_{sc}/n_{sc}$). All methods are evaluated using ROC-AUC and PR-AUC.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llcl}
+\hline
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
+\hline
+Tumor Purity & $\pi$ & 1.0 \\
+Copy Number & $C_j$ & $P(1){=}0.1,\; P(2){=}0.8,\; P(3){=}0.1$ \\
+Multiplicity & $m_j$ & $\{1, \ldots, C_j\}$ (per mutation) \\
+Single-Cell Coverage & $\bar{n}_{sc}$ & 3 \\
+Bulk Coverage & $n_b$ & 250 \\
+Sequencing Error Rate & $\epsilon_{sc}$ & 0.01 \\
+Bulk Concentration & $\kappa$ & 100 \\
+Number of Cells & $N$ & 1000 \\
+Number of Mutations & $M$ & 200 \\
+CCF Distribution & -- & uniform (eq.~\eqref{eq:ccf-reweight}) \\
+Error Model & -- & Lodato \\
+Purity Prior & $\pi \sim \mathcal{N}(\mu, \sigma)$ & (1.0, 0.01) \\
+Copy Number Prior & $C \sim \mathcal{N}(\mu, \sigma)$ & $(\hat{C}_j, 0.3)$ \\
+Multiplicity Prior & $P(m|C)$ & geometric \\
+\hline
+\end{tabular}
+\caption{Simulation and inference parameters. Copy number and multiplicity vary per mutation and the copy number prior mean $\hat{C}_j$ is set to each mutation's true value.}
+\label{tab:simulation-parameters}
+\end{table}
+
+Figure~\ref{fig:simulation} shows the simulated tree as well as the resulting mutation landscape. The CCF histogram in Figure~\ref{fig:simulation}b) confirms that our reweighting procedure (equation~\eqref{eq:ccf-reweight}) produces mutations across the full prevalence range. Copy number and multiplicity assignments (Figure~\ref{fig:simulation}c) follow their categorical and geometric priors, respectively, with the majority of mutations at $C = 2$, $m = 1$. The clustered heatmap (Figure~\ref{fig:simulation}d) reveals the expected clonal architecture. Groups of cells sharing nested sets of mutations, consistent with the underlying tree topology.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/simulation.png}
+    \caption{\textbf{Coalescent population simulation.} (a) Coalescent tree with $N = 1000$ cells; red stars mark mutations. (b) Distribution of realized CCF values across $M = 200$ mutations. (c) Copy number and multiplicity assignments. (d) Clustered cells $\times$ mutations heatmap showing variant presence (red) and absence (yellow).}
+    \label{fig:simulation}
+\end{figure}
+
+Given this simulated data, Figure~\ref{fig:comparison} compares inference results from SC-BIG, ProSolo, and naive VAF thresholding across all 200 mutation sites. SC-BIG achieves the highest ROC-AUC of 0.942, followed by ProSolo (0.877) and naive VAF (0.869) (Figure~\ref{fig:comparison}a). The precision-recall curves (Figure~\ref{fig:comparison}b) reveal a notable reversal. Whereas SC-BIG continues to outperform the other methods with a PR-AUC of 0.956, ProSolo's PR-AUC (0.869) falls below that of naive VAF (0.921). Calibration analysis (Figure~\ref{fig:comparison}c) shows that SC-BIG's posteriors closely track the ideal diagonal (slope $= 1.03$, $R^2 = 0.96$), while ProSolo exhibits both attenuation and scatter (slope $= 0.78$, $R^2 = 0.77$). Naive VAF shows intermediate performance with reasonable linearity ($R^2 = 0.88$) and a large intercept (0.38).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/comparison.png}
+    \caption{\textbf{Overall method comparison.} (a) ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations. (b) Precision-recall curves. (c) Calibration plots with linear fits.}
+    \label{fig:comparison}
+\end{figure}
+
+To investigate model performance with respect to cellular prevalence of the candidate mutation, we performed the subset analysis shown in Figure~\ref{fig:comparison-stratified}. At low CCF (Figure~\ref{fig:comparison-stratified}a--c), all three methods achieve comparable ROC-AUC and PR-AUC with almost perfect calibration for SC-BIG. At mid-range CCF (Figure~\ref{fig:comparison-stratified}d--f), SC-BIGs ROC-AUC clearly separates from ProSolo and naive VAF (0.935 versus 0.693 versus 0.884). It similarly outperforms the other methods with respect to PR-AUC (0.959 versus 0.749 versus 0.945). Notably, ProSolo's ROC and PR curves exhibit a sharp collapse at low false positive rates and low recall, respectively. A similar, yet less pronounced result emerges at high CCF (Figure~\ref{fig:comparison-stratified}g--i). ProSolo's ROC-AUC drops to 0.700, below naive VAF (0.870) and SC-BIG (0.921). With respect to calibration (Figure~\ref{fig:comparison-stratified}f,i), SC-BIG appears to be well calibration for medium and high CCF mutations, too.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/comparison_stratified.png}
+    \caption{\textbf{CCF-stratified method comparison.} Top row (a--c): low CCF stratum ($\text{CCF} \in (0, 0.3]$). Middle row (d--f): mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$). Bottom row (g--i): high CCF stratum ($\text{CCF} \in (0.7, 1.0]$). Columns show ROC curves (left), PR curves (center), and calibration plots (right).}
+    \label{fig:comparison-stratified}
+\end{figure}
+
+\section{Discussion}
+\label{sec:discussion}
+
+Here, we present SC-BIG, a Bayesian model for bulk-informed single-cell variant calling. We provide a simulation framework to test SC-BIG and compare its performance with naive thresholding on single cell VAF and with the established tool ProSolo. In these comparisons, SC-BIG outperforms both methods across the entire CCF spectrum. Importantly, SC-BIG and ProSolo use the same Lodato per-read error model~\cite{lodato2015} so that differences in discrimination reflect modeling assumptions rather than error-model mismatch. In addition to improved classification metrics, SC-BIG provides interpretable uncertainty quantification through well-calibrated posterior probabilities. It outputs a matrix of genotype probabilities that quantifies confidence in variant presence, and calibration analysis demonstrates that a cell assigned posterior probability $p$ truly harbors the variant with frequency $\approx p$ across all CCF regimes. This calibration facilitates threshold selection based on the tolerance of a specific experiment for false positives versus false negatives. Additionally, calibrated posteriors enable integration into downstream probabilistic analyses. Phylogenetic reconstruction methods such as CellPhy~\cite{kozlov2022} can incorporate genotyping uncertainty via genotype likelihoods as input, yielding more accurate trees than methods that require binary genotype calls.
+
+In the context of our simulations, we found a surprising collapse in ProSolo performance for medium and high CCF variants. ProSolo assumes that all somatic variants are clonal, so at low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC and PR-AUC close to SC-BIG. Nevertheless, the clonality assumption seems to become increasingly harmful as CCF rises. At mid-range CCF ($0.3$--$0.7$), the bulk signal is most likely strong enough for ProSolo to conclude the variant exists, but its clonal model then expects every tumor cell to carry it and non-carrier cells are explained away as dropout rather than recognized as true negatives. Lastly, at high CCF ($0.7$--$1.0$), the strong bulk signal causes ProSolo to assign high variant probability to all cells, but the 10--30\% of non-carrier cells are confidently misclassified as dropout events. In our simulation, ProSolo's use of bulk information appears to actively degrades performance compared to ignoring the bulk entirely.
+
+SC-BIG's novel contribution is that it avoids this failure mode by marginalizing over CCF as a continuous latent variable, correctly recognizing that even at high prevalence, a fraction of cells may not carry the variant. The performance gap is potentially further widened by copy number and multiplicity uncertainty. The observed bulk VAF is consistent with multiple $(C, m)$ configurations, and SC-BIG's joint marginalization over these discrete states can yield more accurate per-cell posteriors than ProSolo's fixed diploid model.
+
+The presented work is limited in several ways that should be considered when interpreting the results. First, the comparison with ProSolo, while controlled, involves design choices that favor SC-BIG. The copy number prior mean is set to each mutation's true value ($\hat{C}_j = C_j$), providing SC-BIG with oracle information that might not be available in practice, because copy number estimates derived from real-world data carry substantial uncertainty. Additionally, ProSolo is invoked via synthetic BAM files generated from simulated read counts. While we have verified that this pipeline produces valid alignments, subtle errors could in principle affect ProSolo's performance. The same holds true for the Lodato error model which we have implemented carefully from its description in the respective publications but which might contain undetected software bugs.
+
+Second, several simulation parameters are held fixed. Tumor purity is set to $\pi = 1.0$ throughout, representing a pure tumor sample---the most favorable scenario for bulk-informed inference. At lower purities ($\pi \in [0.3, 0.8]$), the bulk variant signal weakens and the CCF posterior broadens, which could erode SC-BIG's advantage. Similarly, single-cell coverage ($\bar{n}_{sc} = 3$) and error rate ($\epsilon_{sc} = 0.01$) are fixed at single values. A systematic evaluation across these axes would identify the conditions under which the Bayesian approach provides the greatest practical benefit.
+
+Third, the empirical CCF prior (equation~\eqref{eq:ccf-prior}) is estimated from the same single-cell data that are subsequently genotyped. While the prior summarizes population-level prevalence and does not use per-cell genotype information, it creates a certain degree of circularity. We conjecture that this effect will be small in practice, but future research needs to address this limitation.
+
+Fourth, the Lodato error model maps the true allele frequency $m/C$ to one of three discrete values $\{0, 0.5, 1\}$ (equation~\eqref{eq:lodato-af-mapping}). This discretization loses information for non-diploid states. While SC-BIG's technology-agnostic beta-binomial model (equation~\eqref{eq:alpha-beta-from-tau}) does not suffer from this limitation, it is unlikely to fit real data well enough to be usable in any context but simulations. Thus, before SC-BIG can be used on non-MDA data, a continuous, coverage-dependent error model for that particular sequencing technology would have to be developed.
+
+Looking forward, per-cell copy number estimates from scDNA-seq could be incorporated as informative priors on $C$, reducing dependence on bulk-derived estimates and improving inference for aneuploid tumors where copy number varies across cells. Phylogenetic constraints---for example, the requirement that mutations in a subclone also appear in ancestral cells---would most likely further improve genotyping accuracy. We are also planning to apply SC-BIG to an existing cohort of paired single-cell and bulk sequencing data. Real data validation is essential as it introduces systematic biases and model violations that simulations cannot capture.
+
+\section{Acknowledgements}
+
+\noindent DS is partially funded through a research grant by the E.I. Stiftung Kölner Krebsforschung. RFS is a Professor at the Cancer Research Center Cologne Essen (CCCE) funded by the Ministry of Culture and Science of the State of North Rhine-Westphalia. The authors thank the Regional Computing Center of the University of Cologne (RRZK) for providing computing time on the High Performance Computing (HPC) system RAMSES as well as support. The large language model Claude was used for proof-reading and improving the clarity of the manuscript.~\cite{claude3}
+
+\pagebreak
+
+\section{Bibliography}
+
+\printbibliography[heading=none]
+
+\section{Appendix}
+
+SC-BIG takes as an input bulk and single-cell sequencing data, derived bulk data like copy number and purity estimates, and error parameters. Figure~\ref{fig:parameter-illustration} demonstrates the relationship between the directly observed parameters.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{parameter_illustration.png}
+
+    \caption{\textbf{Biological interpretation of model parameters.} The bulk tumor contains a mixture of cancer and normal cells, with only a fraction of cancer cells harboring the variant (CCF). Copy number state $C$, purity $\pi$, and variant read counts $k$ are sampled with uncertainty. Germline SNPs $\mathcal{H}$ provide amplification bias estimate under one of SC-BIG's error models.}
+    \label{fig:parameter-illustration}
+\end{figure}
+
+Bayesian inference of variant presence then proceeds according to algorithm~\ref{alg:inference}.
 
 \begin{algorithm}[htbp]
 \caption{Hierarchical Bayesian Inference}
@@ -356,27 +459,18 @@ Algorithm~\ref{alg:inference} summarizes the complete inference procedure.
 \FOR{each weighted sample $(\text{CCF}, \pi, C, m, w)$}
     \IF{error model is beta-binomial}
         \STATE $L_{z=1} = \text{BetaBinom}(k_{sc}; n_{sc}, \tau m/C, \tau(1-m/C))$
+        \STATE $L_{z=0} = \text{Binom}(k_{sc}; n_{sc}, \epsilon_{sc})$
     \ELSIF{error model is Lodato}
         \STATE Map $\theta_s$ from $m/C$ via eq.~\eqref{eq:lodato-af-mapping}; $L_{z=1}$ via eq.~\eqref{eq:lodato-likelihood}
+        \STATE $L_{z=0}$ via eq.~\eqref{eq:lodato-likelihood} with $\theta_s = 0$
     \ENDIF
-    \STATE $L_{z=0} = \text{Binom}(k_{sc}; n_{sc}, \epsilon_{sc})$
     \STATE $P(z=1|\text{sample}) = \frac{\text{CCF} \cdot L_{z=1}}{\text{CCF} \cdot L_{z=1} + (1-\text{CCF}) \cdot L_{z=0}}$
 \ENDFOR
 \RETURN Weighted average of $P(z=1|\text{sample})$ across all samples
 \end{algorithmic}
 \end{algorithm}
 
-Lastly, algorithm~\ref{alg:simulation} is used to generate synthetic data for validation. To produce a realistic distribution of cellular prevalences, we use the Kingman coalescent~\cite{wu2021}: starting from $N$ leaf nodes (cells), pairs of lineages are merged backwards in time with coalescence times drawn from $\text{Exp}\binom{n}{2}/N_e$, where $n$ is the current number of lineages and $N_e$ is the effective population size. A stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ is assigned to the root, representing the time from tumor founding to the most recent common ancestor; mutations on this branch are clonal ($\text{CCF} = 1$). $M$ somatic mutations are placed on branches proportional to branch length, so that mutations near the root are carried by many cells (high CCF) and mutations near the leaves by few (low CCF). Because coalescent trees concentrate most branch length near the leaves, an optional uniform-CCF reweighting spreads mutations across the full CCF spectrum: eligible branches are grouped into $K$ equal-width CCF bins and the sampling weight of branch $i$ in bin $b$ becomes
-%
-\begin{equation}
-    w_i = \frac{\ell_i}{\sum_{i' \in b} \ell_{i'}} \cdot \frac{1}{K_{\neq\emptyset}}
-    \label{eq:ccf-reweight}
-    ,
-\end{equation}
-%
-where $\ell_i$ is the branch length and $K_{\neq\emptyset}$ is the number of non-empty bins. This preserves relative branch-length weighting within each CCF stratum while equalizing total probability across strata. Copy number $C_j \in \{1, 2, 3\}$ at each locus is drawn from a categorical distribution and multiplicity is sampled from a geometric prior $P(m_j | C_j) \propto 2^{-m_j}$, $m_j \in \{1, \ldots, C_j\}$, consistent with the inference model. Branches yielding $\text{CCF} < 0.05$ are redrawn to avoid degenerate cases where sparse single-cell coverage is uninformative. We assume the infinite sites model as well as independence between loci.
-
-Additionally, for each mutation, bulk reads are drawn from a beta-binomial with the expected VAF and single-cell reads are drawn depending on the chosen error model. With the beta-binomial model, cell-specific amplification bias $\tau_i \sim \text{Gamma}(\mu_\tau, \text{CV}_\tau)$ determines overdispersion for both germline SNPs and somatic variants, ensuring that bias estimated from hSNPs transfers to variant calls. With the Lodato model, single-cell reads are sampled from the coverage-dependent beta-binomial PMF (equation~\eqref{eq:lodato-likelihood}) at the mapped allele frequency $\theta_s$ (equation~\eqref{eq:lodato-af-mapping}). Each mutation produces an independent dataset, enabling parallelized inference.
+To test SC-BIG, a simulation procedure is used that generates a population of cells harboring mutations with different levels of subclonality. Algorithm~\ref{alg:simulation} gives a detailed description of the employed process.
 
 \begin{algorithm}[htbp]
 \caption{Coalescent Simulation}
@@ -385,21 +479,24 @@ Additionally, for each mutation, bulk reads are drawn from a beta-binomial with 
 \REQUIRE $N$ cells, $M$ mutations, $N_e$, purity $\pi$, coverage $(n_b, n_{sc})$, bias $(\mu_\tau, \text{CV}_\tau)$, error model $\in \{\text{beta-binomial}, \text{Lodato}\}$
 \ENSURE $M$ independent datasets with bulk and single-cell data
 
-\STATE Generate Kingman coalescent tree with $N$ leaves and $N_e$; assign stem branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ to the root
+\STATE Generate coalescent tree with $N$ leaves and $N_e$; assign branch $t_{\text{stem}} \sim \text{Exp}(N_e)$ to the root
 \FOR{$j = 1$ to $M$}
     \REPEAT
         \STATE Sample branch with weight $w_i$ (eq.~\eqref{eq:ccf-reweight}); carriers $\gets$ leaf descendants; $\text{CCF}_j \gets |\text{carriers}|/N$
         \STATE Sample $C_j \in \{1, 2, 3\}$, $m_j \sim \text{Geometric}\{1, \ldots, C_j\}$ with $P(m|C) \propto 2^{-m}$
     \UNTIL{$\text{CCF}_j \geq 0.05$}
     \STATE $k_b \sim \text{BetaBinom}(n_b,\; \kappa \cdot \text{VAF}_b,\; \kappa(1-\text{VAF}_b))$ where $\text{VAF}_b = \pi \cdot \text{CCF}_j \cdot m_j / (\pi C_j + 2(1-\pi))$
+    \STATE $\mu_\tau \sim \text{Uniform}[\mu_{\tau,\min},\; \mu_{\tau,\max}]$ \COMMENT{locus-specific bias}
     \FOR{$i = 1$ to $N$}
         \STATE $z_i \gets \mathbf{1}[i \in \text{carriers}]$; \quad $\tau_i \sim \text{Gamma}(\mu_\tau, \text{CV}_\tau)$; \quad $n_{sc,i} \sim \text{Poisson}(n_{sc})$
         \IF{$z_i = 1$ \AND beta-binomial model}
             \STATE $k_{sc,i} \sim \text{BetaBinom}(n_{sc,i},\; \tau_i m_j/C_j,\; \tau_i(1-m_j/C_j))$
         \ELSIF{$z_i = 1$ \AND Lodato model}
-            \STATE Map $\theta_s$ from $m_j/C_j$ via eq.~\eqref{eq:lodato-af-mapping}; $k_{sc,i} \sim P_{\text{Lodato}}(n_{sc,i}, \theta_s)$
-        \ELSE
+            \STATE Map $\theta_s$ from $m_j/C_j$ via eq.~\eqref{eq:lodato-af-mapping}; $k_{sc,i}$ via eq.~\eqref{eq:lodato-likelihood} with $\theta_s$
+        \ELSIF{$z_i = 0$ \AND beta-binomial model}
             \STATE $k_{sc,i} \sim \text{Binom}(n_{sc,i}, \epsilon_{sc})$
+        \ELSE
+            \STATE $k_{sc,i}$ via eq.~\eqref{eq:lodato-likelihood} with $\theta_s = 0$
         \ENDIF
         \STATE Generate $|\mathcal{H}|$ germline SNPs: $k_{g,l} \sim \text{BetaBinom}(n_{g,l}, \tau_i/2, \tau_i/2)$
     \ENDFOR
@@ -407,159 +504,5 @@ Additionally, for each mutation, bulk reads are drawn from a beta-binomial with 
 \RETURN $\{(k_{b,j}, \{k_{sc,i}, n_{sc,i}, \mathcal{H}_i, z_i\}_{i=1}^N, C_j, m_j, \text{CCF}_j)\}_{j=1}^M$
 \end{algorithmic}
 \end{algorithm}
-
-\subsection{Implementation \& Evaluation}
-
-The model is implemented as a Python package providing both a library API and command-line interface. The interface provides subcommands for simulation (\texttt{simulate}, \texttt{simulate-tree}), inference (\texttt{infer}, \texttt{infer-prosolo}), and method comparison (\texttt{compare}). All simulation hyperparameters (CCF, purity, copy number, coverage, error rates, amplification bias parameters) and inference settings (prior distributions, number of MCMC samples, decision threshold) are configurable via command-line arguments.
-
-Bayesian inference uses Pyro~\cite{bingham2019}, a probabilistic programming library built on PyTorch. Pyro enables direct specification of the hierarchical model structure and provides a NUTS (No-U-Turn Sampler) implementation~\cite{hoffman2011} for gradient-based sampling of continuous parameters (CCF, purity). Discrete parameters (copy number, multiplicity) are handled via enumeration, with likelihood-weighted combination of posterior samples across discrete states. Single-cell inference is parallelizable across cells since each posterior probability is computed independently given bulk data, enabling efficient multi-core execution.
-
-For comparison with ProSolo, the \texttt{infer-prosolo} subcommand generates synthetic BAM files from the simulated read counts using \texttt{pysam} and invokes the ProSolo v0.6.1 binary as a subprocess. For each cell at each mutation site, a minimal reference FASTA, candidate VCF, bulk BAM, and single-cell BAM are created, with base qualities set to the Phred score corresponding to the simulated error rate ($Q = -10\log_{10}(e)$). The seven PHRED-scaled event posteriors emitted by ProSolo are converted to linear probabilities, and $P(\text{alt present})$ is computed as the union over the five alt-present events (HET, HOM\_ALT, ADO\_TO\_REF, ADO\_TO\_ALT, ERR\_REF), following equation~9 of \textcite{lahnemann2021}.
-
-SC-BIG is available as an open-source package at \url{https://bitbucket.org/schwarzlab/tool-sc-big} under the GNU General Public License v3.
-
-We evaluate classification performance using two complementary metrics. F1-score balances precision and recall through their harmonic mean:
-
-\begin{equation}
-    \text{F1} = \frac{2 \cdot \text{TP}}{2 \cdot \text{TP} + \text{FP} + \text{FN}}
-    ,
-\end{equation}
-
-where TP, FP, and FN denote true positives, false positives, and false negatives respectively. We compute F1 across all decision thresholds and report the maximum achievable value with its corresponding optimal threshold. ROC-AUC (area under the receiver operating characteristic curve) measures discrimination ability independent of threshold choice:
-
-\begin{equation}
-    \text{ROC-AUC} = \int_0^1 \text{TPR}(\text{FPR}^{-1}(t)) \, dt
-    ,
-\end{equation}
-
-where TPR (true positive rate) $= \text{TP}/(\text{TP}+\text{FN})$ and FPR (false positive rate) $= \text{FP}/(\text{FP}+\text{TN})$. ROC-AUC equals the probability that a randomly chosen positive instance receives a higher score than a randomly chosen negative instance.
-
-\section{Results}
-
-We evaluate SC-BIG on three CCF scenarios (Table~\ref{tab:scenario-parameters}): high ($\text{CCF}=0.8$), intermediate ($\text{CCF}=0.5$), and low ($\text{CCF}=0.2$) cellular prevalences. All other parameters are fixed to be diploid ($C=2$), heterozygous ($m=1$), pure tumor ($\pi=1.0$), sparse coverage ($\bar{n}_{sc}=3$).
-
-\begin{table}[htbp]
-\centering
-\begin{tabular}{llcl}
-\hline
-\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
-\hline
-\multicolumn{3}{l}{\textit{Variable parameter}} \\
-Cancer Cell Fraction & CCF & 0.2, 0.5, 0.8 \\
-\hline
-\multicolumn{3}{l}{\textit{Fixed biological parameters}} \\
-Tumor Purity & $\pi$ & 1.0 \\
-Copy Number & $C$ & 2 \\
-Multiplicity & $m$ & 1 \\
-\hline
-\multicolumn{3}{l}{\textit{Fixed sequencing parameters}} \\
-Single-Cell Coverage & $\bar{n}_{sc}$ & 3 \\
-Bulk Coverage & $n_b$ & 250 \\
-Sequencing Error Rate & $\epsilon_{sc}$ & 0.02 \\
-Germline SNPs & $|\mathcal{H}|$ & 600 \\
-Bulk Concentration & $\kappa$ & 100 \\
-\hline
-\multicolumn{3}{l}{\textit{Fixed amplification bias parameters}} \\
-Concentration Mean & $\mu_\tau$ & 80 \\
-Concentration CV & $\text{CV}_\tau$ & 0.05 \\
-\hline
-\multicolumn{3}{l}{\textit{Simulation settings}} \\
-Number of Cells & $N$ & 500 \\
-Random Seed & -- & 42 \\
-\hline
-\multicolumn{3}{l}{\textit{Inference prior parameters}} \\
-Purity Prior & $\pi \sim \mathcal{N}(\mu, \sigma)$ & (1.0, 0.01) \\
-Copy Number Prior & $C \sim \mathcal{N}(\mu, \sigma)$ & (2.0, 0.3) \\
-Multiplicity Prior & $P(m|C)$ & geometric \\
-\hline
-\end{tabular}
-\caption{Simulation and inference parameters for the three CCF scenarios}
-\label{tab:scenario-parameters}
-\end{table}
-
-For each scenario, we compare SC-BIG to a ``naive'' caller that scores each cell by its observed VAF ($k_{sc}/n_{sc}$) and applies a threshold. Both methods are evaluated using F1-score (across all thresholds) and ROC-AUC.
-
-\subsection{High Prevalence Scenario}
-
-Figure~\ref{fig:high-ccf-results} shows results for the high CCF scenario. The posterior versus $k_{sc}$ plot (Figure~\ref{fig:high-ccf-results}a) shows a systematic shift of variant-present cell posteriors toward higher values at every $k_{sc}$ level, including $k_{sc}=0$ (complete dropout) where both populations present with identical read evidence. The Bayesian method achieves maximum F1 = 0.94 at threshold 0.32, compared to F1 = 0.91 for naive thresholding (Figure~\ref{fig:high-ccf-results}b). ROC-AUC is 0.934 for Bayesian versus 0.857 for naive (Figure~\ref{fig:high-ccf-results}c).
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/almost_all_cells_positive/bayesian_plots.png}
-    \caption{\textbf{High CCF inference results (CCF = 0.8).} (a) Posterior probability versus variant read count $k_{sc}$. Violin plots show the distribution of posteriors for variant-present cells (green) and variant-absent cells (red) at each $k_{sc}$ value; single points indicate $k_{sc}$ values with only one observation. (b) F1-score as a function of decision threshold for Bayesian (green) and naive (red) methods. (c) ROC curves showing Bayesian versus naive AUC.}
-    \label{fig:high-ccf-results}
-\end{figure}
-
-The CCF posterior (Figure~\ref{fig:high-ccf-diagnostics}a) accurately recovers the true value, with mean 0.771 versus the simulation parameter of 0.80. Calibration analysis (Figure~\ref{fig:high-ccf-diagnostics}c) demonstrates well-calibrated posteriors across the full probability range.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/almost_all_cells_positive/bayesian_plots_diagnostics.png}
-    \caption{\textbf{High CCF diagnostics.} (a) CCF posterior distribution . (b) Observed VAF distribution by true variant status. (c) Calibration plot demonstrating well-calibrated posteriors: predicted probabilities accurately reflect observed frequencies. (d) MLE estimate of $\tau$, true $\tau$, and percentage error. (e) Multiplicity posterior. (f) Copy number posterior.}
-    \label{fig:high-ccf-diagnostics}
-\end{figure}
-
-\subsection{Intermediate Prevalence}
-
-Figure~\ref{fig:mid-ccf-results} shows results for the intermediate CCF scenario (approximately 250/500 cells harbor the variant). The same systematic posterior shift is visible (Figure~\ref{fig:mid-ccf-results}a), although attenuated compared to the high CCF case. Both methods achieve similar maximum F1 = 0.87, with optimal thresholds of 0.54 (Bayesian) and 0.17 (naive) (Figure~\ref{fig:mid-ccf-results}b). ROC-AUC is 0.937 for Bayesian versus 0.895 for naive. The CCF posterior (Figure~\ref{fig:mid-ccf-diagnostics}a) again recovers the true value, with mean 0.539 versus the simulation parameter of 0.50.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/half_half/bayesian_plots.png}
-    \caption{\textbf{Intermediate CCF inference results (CCF = 0.5).} (a) Posterior probability versus $k_{sc}$. (b) F1-score versus threshold. (c) ROC curves for Bayesian and naive methods.}
-    \label{fig:mid-ccf-results}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/half_half/bayesian_plots_diagnostics.png}
-    \caption{\textbf{Intermediate CCF diagnostics.} (a) CCF posterior distribution (simulation parameter 0.50). (b) VAF distribution by true status. (c) Calibration plot. (d) MLE estimate of $\tau$, true $\tau$, and percentage error. (e) Multiplicity posterior. (f) Copy number posterior.}
-    \label{fig:mid-ccf-diagnostics}
-\end{figure}
-
-\subsection{Low Prevalence}
-
-Figure~\ref{fig:low-ccf-results} shows results for the low CCF scenario (approximately 100/500 cells harbor the variant). Dropout cells ($k_{sc}=0$) receive low posteriors consistent with the CCF prior, while cells with $k_{sc} \geq 1$ show strong upward shifts (Figure~\ref{fig:low-ccf-results}a). Both methods achieve maximum F1 = 0.80, with optimal thresholds of 0.39 (Bayesian) and 0.21 (naive) (Figure~\ref{fig:low-ccf-results}b). ROC-AUC is 0.946 for Bayesian versus 0.867 for naive. CCF, multiplicity, and copy number posteriors (Figure~\ref{fig:low-ccf-diagnostics}) accurately recover the ground truth.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/almost_all_cells_negative/bayesian_plots.png}
-    \caption{\textbf{Low CCF inference results (CCF = 0.2).} (a) Posterior probability versus $k_{sc}$. (b) F1-score versus threshold. (c) ROC curves.}
-    \label{fig:low-ccf-results}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/almost_all_cells_negative/bayesian_plots_diagnostics.png}
-    \caption{\textbf{Low CCF diagnostics.} (a) CCF posterior distribution (b) VAF distribution by true status. (c) Calibration plot. (d) MLE estimate of $\tau$, true $\tau$, and percentage error. (e) Multiplicity posterior. (f) Copy number posterior.}
-    \label{fig:low-ccf-diagnostics}
-\end{figure}
-
-\section{Discussion}
-\label{sec:discussion}
-
-SC-BIG consistently achieves higher ROC-AUC than naive thresholding across all CCF regimes (0.934--0.946 vs.\ 0.857--0.895), indicating superior discrimination independent of threshold choice. Maximum F1 scores are nearly identical between methods. However, this apparent parity masks the fact that naive thresholding requires knowing the optimal threshold a priori---which is impossible in practice---while SC-BIG's calibrated posteriors enable threshold selection based on application-specific precision-recall trade-offs. The naive method's F1 curve tends to peak sharply at a specific threshold and degrade away from this optimum. This effect is most pronounced at high CCF (Figure~\ref{fig:high-ccf-results}b). SC-BIG on the other hand maintains high F1 across a broader threshold range.
-
-$P(z=1|D)$ distributions reveal SC-BIG's core advantage: at every $k_{sc}$ value, variant-present cells consistently receive higher posteriors on average than variant-absent cells. This systematic upward shift in the posterior distribution---not just at the decision boundary but across the entire range---reflects the model's effective integration of bulk-derived CCF information with single-cell observations. Even for $k_{sc}=0$, where both cell types produce identical read evidence, the posterior distributions separate based on the CCF prior.
-
-At high CCF (0.8), SC-BIG achieves a 3-point improvement in maximum F1 (0.94 vs.\ 0.91). When 80\% of cells harbor the variant, even dropout cells receive elevated posteriors driven by the CCF prior, allowing recovery of true positives that naive thresholding necessarily misses.
-
-At intermediate and low CCF (0.5 and 0.2), both methods achieve similar maximum F1 (0.87 and 0.80 respectively). This convergence is expected: when the CCF prior is near or below 0.5, dropout cells correctly receive low posteriors, and the classification problem reduces to distinguishing cells with $k_{sc} \geq 1$. However, the ROC-AUC gap remains substantial (4--8 percentage points), indicating that SC-BIG provides better ranking even when optimal F1 is matched. Notably, these results were obtained with a relatively wide prior on copy number ($\sigma_C = 0.3$), demonstrating robustness to uncertainty in this input parameter.
-
-CCF posterior estimates exhibit moderate bias in two directions: at high CCF, allelic dropout causes the empirical CCF prior to undercount variant-positive cells, pulling the posterior downward; at low CCF, sequencing errors ($\epsilon_{sc}$) cause variant-absent cells to produce spurious variant reads ($k_{sc} \geq 1$), inflating the empirical prior and biasing the posterior upward. Both effects are small relative to the posterior width and do most likely not affect genotyping accuracy.
-
-Beyond improved classification metrics, SC-BIG provides interpretable uncertainty quantification through well-calibrated posterior probabilities. The method outputs a matrix of genotype probabilities that quantifies confidence in variant presence. Calibration plots (Figures~\ref{fig:high-ccf-diagnostics}c, \ref{fig:mid-ccf-diagnostics}c, \ref{fig:low-ccf-diagnostics}c) demonstrate that across all CCF regimes, a cell assigned posterior probability $p$ truly harbors the variant with frequency $\approx p$. This calibration enables principled decision-making: researchers can select thresholds based on their tolerance for false positives versus false negatives, with transparent interpretation of the trade-offs. Additionally, calibrated posteriors enable direct integration into downstream probabilistic analyses. Phylogenetic reconstruction methods such as CellPhy~\cite{kozlov2022} can incorporate genotyping uncertainty via genotype likelihoods as input, yielding more accurate trees than methods that require binary genotype calls. Similarly, clonal structure inference can propagate uncertainty from variant calls through to clonal assignments.
-
-The presented work is limited in several ways. Our evaluation focused on three CCF values with fixed biological parameters. A systematic grid search varying purity, copy number, multiplicity, coverage, and error rates would characterize performance across the full parameter space and identify conditions where the Bayesian approach provides the greatest benefit. Furthermore, per-cell copy number estimates can readily be obtained from scDNA-seq. Incorporating these as informative priors on $C$ (rather than using bulk-derived estimates) could substantially improve inference, particularly for aneuploid tumors where copy number varies across cells. To further improve model performance, future work will incorporate phylogenetic constraints, for example the requirement that mutations appearing in a distinct subclone also appear in ancestral cells. Lastly, we are currently applying SC-BIG to an existing cohort with paired single-cell and bulk sequencing data. Real data validation is essential as it introduces systematic biases (GC content, mappability) and model violations that simulations cannot capture. Datasets with orthogonal truth would enable rigorous benchmarking against existing single-cell genotyping software.
-
-\section{Acknowledgements}
-
-\noindent DS is partially funded through a research grant by the E.I. Stiftung Kölner Krebsforschung. RFS is a Professor at the Cancer Research Center Cologne Essen (CCCE) funded by the Ministry of Culture and Science of the State of North Rhine-Westphalia. The authors thank the Regional Computing Center of the University of Cologne (RRZK) for providing computing time on the High Performance Computing (HPC) system RAMSES as well as support. The large language model Claude was used for proof-reading and improving the clarity of the manuscript.~\cite{claude3}
-
-\pagebreak
-
-\section{Bibliography}
-
-\printbibliography[heading=none]
 
 \end{document}
