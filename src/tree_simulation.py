@@ -683,7 +683,7 @@ def plot_tree_simulation(
     output_file : str
         Path to save plot
     """
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(8, 6))
     fig.suptitle(
         f"Coalescent Tree Simulation: {hyperparams.n_cells} cells, "
         f"{hyperparams.n_mutations} mutations",
@@ -845,7 +845,7 @@ def _plot_tree_dendrogram(
                 ax.plot(x_pos[root_id], my, "r*", markersize=8)
                 ax.annotate(
                     f"m{mut_id}", (x_pos[root_id], my),
-                    fontsize=6, color="red",
+                    fontsize=4, color="red",
                     xytext=(3, 0), textcoords="offset points"
                 )
 
