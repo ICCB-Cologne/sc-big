@@ -368,14 +368,7 @@ Multiplicity Prior & $P(m|C)$ & geometric \\
 \label{tab:simulation-parameters}
 \end{table}
 
-Figure~\ref{fig:simulation} shows the simulated tree as well as the resulting mutation landscape. The CCF histogram in Figure~\ref{fig:simulation}b) confirms that our reweighting procedure (equation~\eqref{eq:ccf-reweight}) produces mutations across the full prevalence range. Copy number and multiplicity assignments (Figure~\ref{fig:simulation}c) follow their categorical and geometric priors, respectively, with the majority of mutations at $C = 2$, $m = 1$. The clustered heatmap (Figure~\ref{fig:simulation}d) reveals the expected clonal architecture. Groups of cells sharing nested sets of mutations, consistent with the underlying tree topology.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/simulation.png}
-    \caption{\textbf{Coalescent population simulation.} (a) Coalescent tree with $N = 1000$ cells; red stars mark mutations. (b) Distribution of realized CCF values across $M = 200$ mutations. (c) Copy number and multiplicity assignments. (d) Clustered cells $\times$ mutations heatmap showing variant presence (red) and absence (yellow).}
-    \label{fig:simulation}
-\end{figure}
+Figure~\ref{fig:simulation} in the Appendix shows the simulated tree as well as the resulting mutation landscape. The CCF histogram (Figure~\ref{fig:simulation}b) confirms that the reweighting procedure (equation~\eqref{eq:ccf-reweight}) produces mutations across the full prevalence range. Copy number and multiplicity assignments (Figure~\ref{fig:simulation}c) follow their categorical and geometric priors, respectively, with the majority of mutations at $C = 2$, $m = 1$. The clustered heatmap (Figure~\ref{fig:simulation}d) reveals the expected clonal architecture. Groups of cells sharing nested sets of mutations, consistent with the underlying tree topology.
 
 Given this simulated data, Figure~\ref{fig:comparison} compares inference results from SC-BIG, ProSolo, and naive VAF thresholding across all 200 mutation sites. SC-BIG achieves the highest ROC-AUC of 0.942, followed by ProSolo (0.877) and naive VAF (0.869) (Figure~\ref{fig:comparison}a). The precision-recall curves (Figure~\ref{fig:comparison}b) reveal a notable reversal. Whereas SC-BIG continues to outperform the other methods with a PR-AUC of 0.956, ProSolo's PR-AUC (0.869) falls below that of naive VAF (0.921). Calibration analysis (Figure~\ref{fig:comparison}c) shows that SC-BIG's posteriors closely track the ideal diagonal (slope $= 1.03$, $R^2 = 0.96$), while ProSolo exhibits both attenuation and scatter (slope $= 0.78$, $R^2 = 0.77$). Naive VAF shows intermediate performance with reasonable linearity ($R^2 = 0.88$) and a large intercept (0.38).
 
@@ -506,6 +499,15 @@ To test SC-BIG, a simulation procedure is used that generates a population of ce
 \RETURN $\{(k_{b,j}, \{k_{sc,i}, n_{sc,i}, \mathcal{H}_i, z_i\}_{i=1}^N, C_j, m_j, \text{CCF}_j)\}_{j=1}^M$
 \end{algorithmic}
 \end{algorithm}
+
+Figure~\ref{fig:simulation} summarizes key characteristics of the cell population produced by the hyperparameters of Table~\ref{tab:simulation-parameters}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260225_095800/simulation.png}
+    \caption{\textbf{Coalescent population simulation.} (a) Coalescent tree with $N = 1000$ cells; red stars mark mutations. (b) Distribution of realized CCF values across $M = 200$ mutations. (c) Copy number and multiplicity assignments. (d) Clustered cells $\times$ mutations heatmap showing variant presence (red) and absence (yellow).}
+    \label{fig:simulation}
+\end{figure}
 
 In addition to the pure bulk tumor simulation in Figure~\ref{fig:comparison}, we simulated with $\pi = 0.5$. While SC-BIG still outperforms ProSolo in this scenario, ROC-AUC and PR-AUC differences are less marked (Figure~\ref{fig:comparison-impure}). Additionally, ProSolo does not show performance degradation for medium and high CCF ranges (Figure~\ref{fig:comparison-stratified-impure}).
 
