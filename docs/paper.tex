@@ -129,7 +129,7 @@ SC-BIG infers the probability that a variant of interest is present in a specifi
     \begin{minipage}{\textwidth}
         \raggedright\textbf{b.}\\[0.5em]
         \centering
-        \includegraphics[width=0.9\textwidth]{bayesian_network_trimmed.png}
+        \includegraphics[width=0.9\textwidth]{bayesian_network_RS_edit.pdf}
     \end{minipage}
 
     \caption{\textbf{Model overview.} (a) Required input data for SC-BIG. (b) Bayesian network diagram. Double circles indicate primary inference targets. Shaded and unshaded circles represent observed and latent random variables, respectively. Rectangles represent fixed input data.}
@@ -323,7 +323,7 @@ With the Lodato model, single-cell reads are generated in two steps. First, the 
 
 \subsection{Implementation \& Evaluation}
 
-SC-BIG is available as an open-source package at \url{https://bitbucket.org/schwarzlab/sc-big} under the GNU General Public License v3. The model is implemented as a Python package providing both a library API and command-line interface with subcommands for simulation (\texttt{simulate}, \texttt{simulate-tree}), inference (\texttt{infer}, \texttt{infer-prosolo}), and method comparison (\texttt{compare}). All simulation hyperparameters and inference settings are configurable via command-line arguments.
+SC-BIG is available as an open-source package at \url{https://github.com/ICCB-Cologne/sc-big} under the GNU General Public License v3. The model is implemented as a Python package providing both a library API and command-line interface with subcommands for simulation (\texttt{simulate}, \texttt{simulate-tree}), inference (\texttt{infer}, \texttt{infer-prosolo}), and method comparison (\texttt{compare}). All simulation hyperparameters and inference settings are configurable via command-line arguments.
 
 Bayesian inference uses Pyro~\cite{bingham2019}, a probabilistic programming library built on PyTorch. Pyro enables direct specification of the hierarchical model structure and provides a NUTS (No-U-Turn Sampler) implementation~\cite{hoffman2011} for sampling of continuous parameters. Discrete parameters are enumerated and each MCMC sample receives a weight proportional to $P(C) \cdot P(m|C) \cdot P(k_b | n_b, \text{CCF}, \pi, C, m)$. The hierarchical marginalization is computed as a weighted average over posterior samples. Single-cell inference is parallelizable across cells since each posterior probability is computed independently given bulk data, enabling efficient multi-core execution.
 
@@ -340,7 +340,7 @@ where TPR (true positive rate) $= \text{TP}/(\text{TP}+\text{FN})$ and FPR (fals
 
 \section{Results}
 
-We evaluated SC-BIG on a simulated population of $N = 1000$ cells with $M = 200$ somatic mutations spanning the full CCF spectrum. Table~\ref{tab:simulation-parameters} summarizes the simulation and inference parameters used. Both procedures use the Lodato error model and for method comparisons, we present SC-BIG, ProSolo, and a naive caller that scores each cell by its observed VAF ($k_{sc}/n_{sc}$). All methods are evaluated using ROC-AUC and PR-AUC.
+We evaluated SC-BIG on a simulated population of $N = 1000$ cells with $M = 200$ somatic mutations spanning the full CCF spectrum. The bulk tumor is generated without normal cell admixture ($\pi = 1.0$). Table~\ref{tab:simulation-parameters} summarizes the simulation and inference parameters used. Both procedures use the Lodato error model and for method comparisons, we present SC-BIG, ProSolo, and a naive caller that scores each cell by its observed VAF ($k_{sc}/n_{sc}$). All methods are evaluated using ROC-AUC and PR-AUC.
 
 \begin{table}[htbp]
 \centering
@@ -381,7 +381,7 @@ Given this simulated data, Figure~\ref{fig:comparison} compares inference result
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/comparison.png}
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260225_095800/comparison.png}
     \caption{\textbf{Overall method comparison.} (a) ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations. (b) Precision-recall curves. (c) Calibration plots with linear fits.}
     \label{fig:comparison}
 \end{figure}
@@ -390,29 +390,27 @@ To investigate model performance with respect to cellular prevalence of the cand
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{../data/population_simulation_20260215_131210/comparison_stratified.png}
+    \includegraphics[width=\textwidth]{../data/population_simulation_20260225_095800/comparison_stratified.png}
     \caption{\textbf{CCF-stratified method comparison.} Top row (a--c): low CCF stratum ($\text{CCF} \in (0, 0.3]$). Middle row (d--f): mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$). Bottom row (g--i): high CCF stratum ($\text{CCF} \in (0.7, 1.0]$). Columns show ROC curves (left), PR curves (center), and calibration plots (right).}
     \label{fig:comparison-stratified}
 \end{figure}
+
+Whereas this first simulation of a pure bulk tumor represented ideal bulk evidence, we performed a similar experiment with $\pi = 0.5$ as well. Results are shown in the Appendix (Figure~\ref{fig:comparison-impure} and Figure~\ref{fig:comparison-stratified-impure}).
 
 \section{Discussion}
 \label{sec:discussion}
 
 Here, we present SC-BIG, a Bayesian model for bulk-informed single-cell variant calling. We provide a simulation framework to test SC-BIG and compare its performance with naive thresholding on single cell VAF and with the established tool ProSolo. In these comparisons, SC-BIG outperforms both methods across the entire CCF spectrum. Importantly, SC-BIG and ProSolo use the same Lodato per-read error model~\cite{lodato2015} so that differences in discrimination reflect modeling assumptions rather than error-model mismatch. In addition to improved classification metrics, SC-BIG provides interpretable uncertainty quantification through well-calibrated posterior probabilities. It outputs a matrix of genotype probabilities that quantifies confidence in variant presence, and calibration analysis demonstrates that a cell assigned posterior probability $p$ truly harbors the variant with frequency $\approx p$ across all CCF regimes. This calibration facilitates threshold selection based on the tolerance of a specific experiment for false positives versus false negatives. Additionally, calibrated posteriors enable integration into downstream probabilistic analyses. Phylogenetic reconstruction methods such as CellPhy~\cite{kozlov2022} can incorporate genotyping uncertainty via genotype likelihoods as input, yielding more accurate trees than methods that require binary genotype calls.
 
-In the context of our simulations, we found a surprising collapse in ProSolo performance for medium and high CCF variants. We hypothesize that, for such bulk VAFs, the restricted genotype mixture model used by ProSolo favors near-clonal interpretations of the variant, which can degrade performance in certain settings. At low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC and PR-AUC close to SC-BIG. On the other hand, the constraints of the genotype mixture model appear to yield increasingly miscalibrated predictions as CCF rises. At mid-range CCF ($0.3$--$0.7$), the bulk signal is strong enough for ProSolo to infer the presence of the variant and the model begins to favor explanations in which most tumor cells carry it. Non-carrier cells are likely explained as ADO rather than recognized as true negatives. Lastly, at high CCF ($0.7$--$1.0$), the strong bulk signal causes ProSolo to assign high variant probability to all cells, again misclassifying many truly negative cells as dropout events. In our simulation, ProSolo's use of bulk information appears to actively degrade performance compared to ignoring the bulk entirely. In summary, this behavior likely arises because its bulk model restricts allele frequencies to mixtures of adjacent diploid genotypes, which can bias inference toward widespread presence of the variant once the bulk signal becomes strong.
+In the context of our simulations, we found a surprising collapse in ProSolo performance for medium and high CCF variants. We hypothesize that, for such bulk VAFs, the restricted genotype mixture model used by ProSolo favors near-clonal interpretations of the variant, which can degrade performance in certain settings. At low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC and PR-AUC close to SC-BIG. On the other hand, the constraints of the genotype mixture model appear to yield increasingly miscalibrated predictions as CCF rises. At mid-range CCF ($0.3$--$0.7$), the bulk signal is strong enough for ProSolo to infer the presence of the variant and the model begins to favor explanations in which most tumor cells carry it. Non-carrier cells are likely explained as ADO rather than recognized as true negatives. Lastly, at high CCF ($0.7$--$1.0$), the strong bulk signal causes ProSolo to assign high variant probability to all cells, again misclassifying many truly negative cells as dropout events. In our simulation, ProSolo's use of bulk information appears to actively degrade performance compared to ignoring the bulk entirely. In summary, this behavior likely arises because its bulk model restricts allele frequencies to mixtures of adjacent diploid genotypes, which can bias inference toward widespread presence of the variant once the bulk signal becomes strong. Importantly, when tumor purity is set to $\pi = 0.5$, the bulk variant signal weakens and SC-BIG outperforms ProSolo less substantially for mid- and high-range CCF.
 
 SC-BIG's novel contribution is that it avoids this failure mode by marginalizing over CCF as a continuous latent variable, correctly recognizing that even at high prevalence, a fraction of cells may not carry the variant. The performance gap is potentially further widened by copy number and multiplicity uncertainty. The observed bulk VAF is consistent with multiple $(C, m)$ configurations, and SC-BIG's joint marginalization over these discrete states can yield more accurate per-cell posteriors than ProSolo's fixed diploid model.
 
-The presented work is limited in several ways. First, the comparison with ProSolo, while controlled, involves design choices that favor SC-BIG. The copy number prior mean is set to each mutation's true value ($\hat{C}_j = C_j$), providing SC-BIG with accurate information that might not be available in practice, because copy number estimates derived from real-world data carry substantial uncertainty. Additionally, ProSolo is invoked via synthetic BAM files generated from simulated read counts. While we have verified that this pipeline produces valid alignments, subtle errors could in principle affect ProSolo's performance. The same holds true for the Lodato error model which we have implemented carefully from its description in the respective publications but which might contain undetected software bugs.
+The presented work is limited in several ways. First, the comparison with ProSolo, while controlled, involves design choices that favor SC-BIG. The copy number and purity priors are set to each mutation's true values with little variance, providing SC-BIG with accurate information that might not be available in practice, because estimates for $C$ and $\pi$ derived from real-world data can carry substantial uncertainty. Additionally, ProSolo is invoked via synthetic BAM files generated from simulated read counts. While we have verified that this pipeline produces valid alignments, subtle errors could in principle affect ProSolo's performance. The same holds true for the Lodato error model which we have implemented carefully from its description in the respective publications but which might contain undetected software bugs.
 
-Second, several simulation parameters are held fixed. Tumor purity is set to $\pi = 1.0$ throughout, representing a pure tumor sample---the most favorable scenario for bulk-informed inference. At lower purities ($\pi \in [0.3, 0.8]$), the bulk variant signal weakens and the CCF posterior broadens, which could erode SC-BIG's advantage. Similarly, single-cell coverage ($\bar{n}_{sc} = 3$) and error rate ($\epsilon_{sc} = 0.01$) are fixed at single values. A systematic evaluation across these axes would identify the conditions under which the Bayesian approach provides the greatest practical benefit.
+Second, the empirical CCF prior (equation~\eqref{eq:ccf-prior}) is estimated from the same single-cell data that are subsequently genotyped. While the prior summarizes population-level prevalence and does not use per-cell genotype information, it creates a certain degree of circularity. We conjecture that this effect will be small in practice, but future research needs to address this limitation.
 
-Third, the empirical CCF prior (equation~\eqref{eq:ccf-prior}) is estimated from the same single-cell data that are subsequently genotyped. While the prior summarizes population-level prevalence and does not use per-cell genotype information, it creates a certain degree of circularity. We conjecture that this effect will be small in practice, but future research needs to address this limitation.
-
-Fourth, the Lodato error model maps the true allele frequency $m/C$ to one of three discrete values $\{0, 0.5, 1\}$ (equation~\eqref{eq:lodato-af-mapping}). This discretization loses information for non-diploid states. While SC-BIG's technology-agnostic beta-binomial model (equation~\eqref{eq:alpha-beta-from-tau}) does not suffer from this limitation, it is unlikely to fit data well in a non-simulation context. This is especially true because it assumes a 1:1 allelic ratio which might not hold for loci affected by copy number changes and because we do not investigate genomic windows suitable for the estimation procedure. In the future, a method akin to the one described in \textcite{luquette2019} could be used to generate an error model for non-MDA techologies.
-
-Thus, before SC-BIG can be used on non-MDA data, a continuous, coverage-dependent error model for that particular sequencing technology would have to be developed.
+Third, the Lodato error model maps the true allele frequency $m/C$ to one of three discrete values $\{0, 0.5, 1\}$ (equation~\eqref{eq:lodato-af-mapping}). This discretization loses information for non-diploid states. While SC-BIG's technology-agnostic beta-binomial model (equation~\eqref{eq:alpha-beta-from-tau}) does not suffer from this limitation, it is unlikely to fit data well in a non-simulation context. This is especially true because it assumes a 1:1 allelic ratio which might not hold for loci affected by copy number changes and because we do not investigate genomic windows suitable for the estimation procedure. In the future, a method akin to the one described in \textcite{luquette2019} could be used to generalize SC-BIG's error models to non-MDA techologies.
 
 Looking forward, per-cell copy number estimates from scDNA-seq could be incorporated as informative priors on $C$, reducing dependence on bulk-derived estimates and improving inference for aneuploid tumors where copy number varies across cells. Phylogenetic constraints---for example, the requirement that mutations in a subclone also appear in ancestral cells---would most likely further improve genotyping accuracy. We are also planning to apply SC-BIG to an existing cohort of paired single-cell and bulk sequencing data. Real data validation is essential as it introduces systematic biases and model violations that simulations cannot capture.
 
@@ -508,5 +506,21 @@ To test SC-BIG, a simulation procedure is used that generates a population of ce
 \RETURN $\{(k_{b,j}, \{k_{sc,i}, n_{sc,i}, \mathcal{H}_i, z_i\}_{i=1}^N, C_j, m_j, \text{CCF}_j)\}_{j=1}^M$
 \end{algorithmic}
 \end{algorithm}
+
+In addition to the pure bulk tumor simulation in Figure~\ref{fig:comparison}, we simulated with $\pi = 0.5$. While SC-BIG still outperforms ProSolo in this scenario, ROC-AUC and PR-AUC differences are less marked (Figure~\ref{fig:comparison-impure}). Additionally, ProSolo does not show performance degradation for medium and high CCF ranges (Figure~\ref{fig:comparison-stratified-impure}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison.png}
+    \caption{\textbf{Overall method comparison for an impure tumor ($\pi = 0.5$).} (a) ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations. (b) Precision-recall curves. (c) Calibration plots with linear fits.}
+    \label{fig:comparison-impure}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison_stratified.png}
+    \caption{\textbf{CCF-stratified method comparison for an impure tumor ($\pi = 0.5$).} Top row (a--c): low CCF stratum ($\text{CCF} \in (0, 0.3]$). Middle row (d--f): mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$). Bottom row (g--i): high CCF stratum ($\text{CCF} \in (0.7, 1.0]$). Columns show ROC curves (left), PR curves (center), and calibration plots (right).}
+    \label{fig:comparison-stratified-impure}
+\end{figure}
 
 \end{document}
