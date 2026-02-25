@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sc-big"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bayesian model for somatic SNV re-detection in single-cell DNA sequencing using bulk sequencing data"
 authors = [{name = "Daniel Schütte"}]
 maintainers = [{name = "Daniel Schütte"}]
