@@ -683,7 +683,7 @@ def plot_tree_simulation(
     output_file : str
         Path to save plot
     """
-    fig = plt.figure(figsize=(16, 12))
+    fig = plt.figure(figsize=(12, 8))
     fig.suptitle(
         f"Coalescent Tree Simulation: {hyperparams.n_cells} cells, "
         f"{hyperparams.n_mutations} mutations",

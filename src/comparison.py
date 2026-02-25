@@ -232,7 +232,7 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
         extension.
     """
     # Figure 1: overall comparison (single row).
-    fig, axes = plt.subplots(1, 3, figsize=(18, 4), squeeze=False)
+    fig, axes = plt.subplots(1, 3, figsize=(12, 3), squeeze=False)
     _plot_comparison_row(
         axes[0], scbig_results, prosolo_results, _PANEL_LETTERS[0],
     )
@@ -266,7 +266,7 @@ def plot_comparison(scbig_results, prosolo_results, output_file,
 
     n_rows = len(strat_rows)
     fig, all_axes = plt.subplots(
-        n_rows, 3, figsize=(18, 5 * n_rows), squeeze=False,
+        n_rows, 3, figsize=(12, 3 * n_rows), squeeze=False,
     )
     for row_idx, (label, s_res, p_res) in enumerate(strat_rows):
         _plot_comparison_row(
