@@ -683,12 +683,7 @@ def plot_tree_simulation(
     output_file : str
         Path to save plot
     """
-    fig = plt.figure(figsize=(8, 6))
-    fig.suptitle(
-        f"Coalescent Tree Simulation: {hyperparams.n_cells} cells, "
-        f"{hyperparams.n_mutations} mutations",
-        fontsize=14, fontweight="bold"
-    )
+    fig = plt.figure(figsize=(10, 6))
     gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.3, top=0.93)
 
     # Panel a: Tree dendrogram.
@@ -712,7 +707,9 @@ def plot_tree_simulation(
                 label=f"Mean={np.mean(ccfs):.3f}")
     ax2.set_xlabel("Realized CCF")
     ax2.set_ylabel("Count")
-    ax2.set_title("CCF Distribution Across Mutations")
+    ax2.set_title(
+        f"CCF Distribution Across {len(mutations)} Mutations"
+    )
     ax2.legend()
 
     # Panel c: Counts per (C, m) combination.
@@ -757,6 +754,7 @@ def plot_tree_simulation(
     heatmap = heatmap[np.ix_(cell_order, mut_order)]
     ax4.imshow(heatmap, aspect="auto", cmap="YlOrRd", interpolation="nearest")
     ax4.set_xticks([])
+    ax4.set_yticks([])
     ax4.set_xlabel("Mutations")
     ax4.set_ylabel("Cells")
     ax4.set_title("Mutation status (yellow=absent, red=present)")
@@ -822,11 +820,6 @@ def _plot_tree_dendrogram(
                     frac = (idx + 1) / (n_muts_here + 1)
                     my = y_lo + frac * (y_hi - y_lo)
                     ax.plot(x_pos[n.id], my, "r*", markersize=8)
-                    ax.annotate(
-                        f"m{mut_id}", (x_pos[n.id], my),
-                        fontsize=6, color="red",
-                        xytext=(3, 0), textcoords="offset points"
-                    )
 
     stem = nodes[root_id].branch_length
     if stem > 0:
@@ -843,11 +836,6 @@ def _plot_tree_dendrogram(
                 frac = (idx + 1) / (n_muts_here + 1)
                 my = y_pos[root_id] - frac * stem
                 ax.plot(x_pos[root_id], my, "r*", markersize=8)
-                ax.annotate(
-                    f"m{mut_id}", (x_pos[root_id], my),
-                    fontsize=4, color="red",
-                    xytext=(3, 0), textcoords="offset points"
-                )
 
     ax.set_title(f"Coalescent Tree ({n_leaves} cells)")
     ax.set_xlabel("Cell")
