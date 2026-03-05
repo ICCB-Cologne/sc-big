@@ -508,7 +508,29 @@ With respect to calibration (Figure~\ref{fig:comparison-stratified}f,i), SC-BIG 
 \end{figure}
 
 Whereas this first simulation of a pure bulk tumor represented ideal bulk evidence, we performed a similar experiment with $\pi = 0.5$ as well.
-Results are shown in the Appendix (Figure~\ref{fig:comparison-impure} and Figure~\ref{fig:comparison-stratified-impure}).
+While SC-BIG still outperforms ProSolo in this scenario, ROC-AUC and PR-AUC differences are less marked (Figure~\ref{fig:comparison-impure}).
+Additionally, ProSolo does not show performance degradation for medium and high CCF ranges (Figure~\ref{fig:comparison-stratified-impure}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison.png}
+    \caption{\textbf{Overall method comparison for an impure tumor ($\pi = 0.5$).}
+    (a) ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations.
+    (b) Precision-recall curves.
+    (c) Calibration plots with linear fits.}
+    \label{fig:comparison-impure}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison_stratified.png}
+    \caption{\textbf{CCF-stratified method comparison for an impure tumor ($\pi = 0.5$).}
+    Top row (a--c): low CCF stratum ($\text{CCF} \in (0, 0.3]$).
+    Middle row (d--f): mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$).
+    Bottom row (g--i): high CCF stratum ($\text{CCF} \in (0.7, 1.0]$).
+    Columns show ROC curves (left), PR curves (center), and calibration plots (right).}
+    \label{fig:comparison-stratified-impure}
+\end{figure}
 
 \section{Discussion}
 \label{sec:discussion}
@@ -674,31 +696,6 @@ Figure~\ref{fig:simulation} summarizes key characteristics of the cell populatio
     (c) Copy number and multiplicity assignments.
     (d) Clustered cells $\times$ mutations heatmap showing variant presence (red) and absence (yellow).}
     \label{fig:simulation}
-\end{figure}
-
-In addition to the pure bulk tumor simulation in Figure~\ref{fig:comparison}, we simulated with $\pi = 0.5$.
-While SC-BIG still outperforms ProSolo in this scenario, ROC-AUC and PR-AUC differences are less marked (Figure~\ref{fig:comparison-impure}).
-Additionally, ProSolo does not show performance degradation for medium and high CCF ranges (Figure~\ref{fig:comparison-stratified-impure}).
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison.png}
-    \caption{\textbf{Overall method comparison for an impure tumor ($\pi = 0.5$).}
-    (a) ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations.
-    (b) Precision-recall curves.
-    (c) Calibration plots with linear fits.}
-    \label{fig:comparison-impure}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{../data/population_simulation_impure_20260224_232225/comparison_stratified.png}
-    \caption{\textbf{CCF-stratified method comparison for an impure tumor ($\pi = 0.5$).}
-    Top row (a--c): low CCF stratum ($\text{CCF} \in (0, 0.3]$).
-    Middle row (d--f): mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$).
-    Bottom row (g--i): high CCF stratum ($\text{CCF} \in (0.7, 1.0]$).
-    Columns show ROC curves (left), PR curves (center), and calibration plots (right).}
-    \label{fig:comparison-stratified-impure}
 \end{figure}
 
 \end{document}
