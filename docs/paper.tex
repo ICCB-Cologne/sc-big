@@ -546,7 +546,7 @@ Phylogenetic reconstruction methods such as CellPhy~\cite{kozlov2022} can incorp
 
 In the context of our simulations, we found a surprising collapse in ProSolo performance for medium and high CCF variants.
 We hypothesize that, for such bulk VAFs, the restricted genotype mixture model used by ProSolo favors near-clonal interpretations of the variant, which can degrade performance in certain settings.
-With high tumor purity and and low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC close to SC-BIG.
+With high tumor purity and low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC close to SC-BIG.
 On the other hand, the constraints of the genotype mixture model appear to yield increasingly miscalibrated predictions as CCF rises.
 At mid-range CCF ($0.3$--$0.7$), the bulk signal is strong enough for ProSolo to infer the presence of the variant and the model begins to favor explanations in which most tumor cells carry it.
 Non-carrier cells are likely explained as ADO rather than recognized as true negatives.
@@ -588,7 +588,7 @@ RFS is a Professor at the Cancer Research Center Cologne Essen (CCCE) funded by 
 This work was supported by the Bruno and Helene Jöster Foundation as ``CLONETRAC - Tracking the clonal dynamics of cancer through treatment at the single-cell level''.
 The authors thank the Regional Computing Center of the University of Cologne (RRZK) for providing computing time on the High Performance Computing (HPC) system RAMSES as well as support.
 The large language model Claude Sonnet 3.5 was used for proof-reading and improving the clarity of the manuscript~\cite{claude3_2024}.
-The SC-BIG log was created with the help of GPT-5 mini~\cite{gpt5mini_2026}.
+The SC-BIG logo was created with the help of GPT-5 mini~\cite{gpt5mini_2026}.
 
 \section{Bibliography}
 
