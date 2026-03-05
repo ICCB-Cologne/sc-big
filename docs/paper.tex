@@ -400,6 +400,39 @@ With the Lodato model, single-cell reads are generated in two steps.
 First, the Lodato amplification model produces a distorted read count at the mapped allele frequency $\theta_s$ (equation~\eqref{eq:lodato-af-mapping}).
 Then, per-read sequencing error at rate $\epsilon_{sc}$ is applied, matching the generative process of equation~\eqref{eq:lodato-likelihood}.
 
+Table~\ref{tab:simulation-parameters} shows the parameter values used for simulating data and performing inference.
+Copy number of each mutation was allowed to vary to test the severity of violating the diploid assumption of ProSolo.
+Coverage values for single-cells and the bulk were chosen to mimic values from typical empirical datasets.
+The sequencing error rate was set to 0.01, which is slightly higher than expected for a typical Illumina dataset~\cite{Stoler2021}.
+This was chosen to account for the potentially increased sequencing error in single-cell experiments.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llcl}
+\hline
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
+\hline
+Tumor Purity & $\pi$ & 1.0 \\
+Copy Number & $C_j$ & $P(1){=}0.1,\; P(2){=}0.8,\; P(3){=}0.1$ \\
+Multiplicity & $m_j$ & $\{1, \ldots, C_j\}$ (per mutation) \\
+Single-Cell Coverage & $\bar{n}_{sc}$ & 3 \\
+Bulk Coverage & $n_b$ & 250 \\
+Sequencing Error Rate & $\epsilon_{sc}$ & 0.01 \\
+Bulk Concentration & $\kappa$ & 100 \\
+Number of Cells & $N$ & 1000 \\
+Number of Mutations & $M$ & 200 \\
+CCF Distribution & -- & uniform (eq.~\eqref{eq:ccf-reweight}) \\
+Error Model & -- & Lodato \\
+Purity Prior & $\pi \sim \mathcal{N}(\mu, \sigma)$ & (1.0, 0.01) \\
+Copy Number Prior & $C \sim \mathcal{N}(\mu, \sigma)$ & $(\hat{C}_j, 0.3)$ \\
+Multiplicity Prior & $P(m|C)$ & geometric \\
+\hline
+\end{tabular}
+\caption{Simulation and inference parameters.
+Copy number and multiplicity vary per mutation and the copy number prior mean $\hat{C}_j$ is set to each mutation's true value.}
+\label{tab:simulation-parameters}
+\end{table}
+
 \subsection{Implementation \& Evaluation}
 
 SC-BIG is available as an open-source package at \url{https://github.com/ICCB-Cologne/sc-big} under the GNU General Public License v3.
@@ -429,38 +462,9 @@ where TPR (true positive rate) $= \text{TP}/(\text{TP}+\text{FN})$ and FPR (fals
 
 \section{Results}
 
-We evaluated SC-BIG on a simulated population of $N = 1000$ cells with $M = 200$ somatic mutations spanning the full CCF spectrum.
-The bulk tumor is generated without normal cell admixture ($\pi = 1.0$).
-Table~\ref{tab:simulation-parameters} summarizes the simulation and inference parameters used.
+We evaluated SC-BIG on simulated datasets with parameters defined in Table~\ref{tab:simulation-parameters}.
 Both procedures use the Lodato error model and for method comparisons, we present SC-BIG, ProSolo, and a naive caller that scores each cell by its observed VAF ($k_{sc}/n_{sc}$).
 All methods are evaluated using ROC-AUC and PR-AUC.
-
-\begin{table}[htbp]
-\centering
-\begin{tabular}{llcl}
-\hline
-\textbf{Parameter} & \textbf{Symbol} & \textbf{Value} \\
-\hline
-Tumor Purity & $\pi$ & 1.0 \\
-Copy Number & $C_j$ & $P(1){=}0.1,\; P(2){=}0.8,\; P(3){=}0.1$ \\
-Multiplicity & $m_j$ & $\{1, \ldots, C_j\}$ (per mutation) \\
-Single-Cell Coverage & $\bar{n}_{sc}$ & 3 \\
-Bulk Coverage & $n_b$ & 250 \\
-Sequencing Error Rate & $\epsilon_{sc}$ & 0.01 \\
-Bulk Concentration & $\kappa$ & 100 \\
-Number of Cells & $N$ & 1000 \\
-Number of Mutations & $M$ & 200 \\
-CCF Distribution & -- & uniform (eq.~\eqref{eq:ccf-reweight}) \\
-Error Model & -- & Lodato \\
-Purity Prior & $\pi \sim \mathcal{N}(\mu, \sigma)$ & (1.0, 0.01) \\
-Copy Number Prior & $C \sim \mathcal{N}(\mu, \sigma)$ & $(\hat{C}_j, 0.3)$ \\
-Multiplicity Prior & $P(m|C)$ & geometric \\
-\hline
-\end{tabular}
-\caption{Simulation and inference parameters.
-Copy number and multiplicity vary per mutation and the copy number prior mean $\hat{C}_j$ is set to each mutation's true value.}
-\label{tab:simulation-parameters}
-\end{table}
 
 Figure~\ref{fig:simulation} in the Appendix shows the simulated tree as well as the resulting mutation landscape.
 The CCF histogram (Figure~\ref{fig:simulation}b) confirms that the reweighting procedure (equation~\eqref{eq:ccf-reweight}) produces mutations across the full prevalence range.
