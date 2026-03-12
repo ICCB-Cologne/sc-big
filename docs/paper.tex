@@ -481,7 +481,7 @@ Naive VAF shows intermediate performance with reasonable linearity ($R^2 = 0.88$
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{figures/pure_overall.png}
+    \includegraphics[width=0.9\textwidth]{figures/pure_overall.png}
     \caption{\textbf{Overall method comparison.}
     Left: ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations.
     Right: Calibration plots with linear fits.}
@@ -498,7 +498,7 @@ With respect to calibration (Figure~\ref{fig:comparison-stratified}, bottom row)
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{figures/pure_stratified.png}
+    \includegraphics[width=0.9\textwidth]{figures/pure_stratified.png}
     \caption{\textbf{CCF-stratified method comparison.}
     Left column: low CCF stratum ($\text{CCF} \in (0, 0.3]$).
     Middle column: mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$).
@@ -513,7 +513,7 @@ Additionally, ProSolo does not show performance degradation for medium and high 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{figures/impure_overall.png}
+    \includegraphics[width=0.9\textwidth]{figures/impure_overall.png}
     \caption{\textbf{Overall method comparison for an impure tumor ($\pi = 0.5$).}
     Left: ROC curves for SC-BIG, ProSolo, and naive VAF thresholding across all mutations.
     Right: Calibration plots with linear fits.}
@@ -522,7 +522,7 @@ Additionally, ProSolo does not show performance degradation for medium and high 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\textwidth]{figures/impure_stratified.png}
+    \includegraphics[width=0.9\textwidth]{figures/impure_stratified.png}
     \caption{\textbf{CCF-stratified method comparison for an impure tumor ($\pi = 0.5$).}
     Left column: low CCF stratum ($\text{CCF} \in (0, 0.3]$).
     Middle column: mid CCF stratum ($\text{CCF} \in (0.3, 0.7]$).
@@ -544,16 +544,13 @@ This calibration facilitates threshold selection based on the tolerance of a spe
 Additionally, calibrated posteriors enable integration into downstream probabilistic analyses.
 Phylogenetic reconstruction methods such as CellPhy~\cite{kozlov2022} can incorporate genotyping uncertainty via genotype likelihoods as input, yielding more accurate trees than methods that require binary genotype calls.
 
-In the context of our simulations, we found a surprising collapse in ProSolo performance for medium and high CCF variants.
-We hypothesize that, for such bulk VAFs, the restricted genotype mixture model used by ProSolo favors near-clonal interpretations of the variant, which can degrade performance in certain settings.
-With high tumor purity and low CCF, the bulk variant signal is weak and ProSolo appropriately assigns low variant probabilities to most cells, achieving ROC-AUC close to SC-BIG.
-On the other hand, the constraints of the genotype mixture model appear to yield increasingly miscalibrated predictions as CCF rises.
-At mid-range CCF ($0.3$--$0.7$), the bulk signal is strong enough for ProSolo to infer the presence of the variant and the model begins to favor explanations in which most tumor cells carry it.
-Non-carrier cells are likely explained as ADO rather than recognized as true negatives.
-Lastly, at high CCF ($0.7$--$1.0$), the strong bulk signal causes ProSolo to assign high variant probability to all cells, again misclassifying many truly negative cells as dropout events.
-In our simulation, ProSolo's use of bulk information appears to actively degrade performance compared to ignoring the bulk entirely.
-In summary, this behavior likely arises because its bulk model restricts allele frequencies to mixtures of adjacent diploid genotypes, which can bias inference toward widespread presence of the variant once the bulk signal becomes strong.
-Importantly, when tumor purity is reduced to $\pi = 0.5$, the bulk variant signal weakens and SC-BIG outperforms ProSolo less substantially for mid- and high-range CCF.
+In our simulations, ProSolo performance collapsed for medium and high CCF variants.
+We hypothesize that its restricted genotype mixture model favors near-clonal variant interpretations, degrading performance as bulk CCF rises.
+At low CCF with high tumor purity, the weak bulk signal causes ProSolo to appropriately assign low variant probabilities, achieving ROC-AUC close to SC-BIG.
+At mid- ($0.3-0.7$) and high-range ($0.7-1.0$) CCF on the other hand, the model begins favoring explanations in which most tumor cells carry the variant, likely explaining non-carrier cells as ADO rather than true negatives.
+This behavior likely arises because ProSolo's bulk model restricts allele frequencies to mixtures of adjacent diploid genotypes, biasing inference toward widespread variant presence once the bulk signal is strong.
+This results in bulk information actively degrading performance compared to ignoring it entirely.
+Notably, at reduced tumor purity ($\pi = 0.5$), the weaker bulk signal attenuates the miscalibration effects described above, thus supporting our hypothesis.
 
 SC-BIG instead marginalizes over CCF as a continuous latent variable, recognizing that even at high prevalence, a fraction of cells may not carry the variant.
 The performance gap is potentially further widened by copy number and multiplicity uncertainty.
@@ -589,6 +586,8 @@ This work was supported by the Bruno and Helene Jöster Foundation as ``CLONETRA
 The authors thank the Regional Computing Center of the University of Cologne (RRZK) for providing computing time on the High Performance Computing (HPC) system RAMSES as well as support.
 The large language model Claude Sonnet 3.5 was used for proof-reading and improving the clarity of the manuscript~\cite{claude3_2024}.
 The SC-BIG logo was created with the help of GPT-5 mini~\cite{gpt5mini_2026}.
+
+\pagebreak
 
 \section{Bibliography}
 
