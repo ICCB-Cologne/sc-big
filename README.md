@@ -40,7 +40,7 @@ pytest tests/ -v
 
 ## Documentation
 
-See `docs/paper.pdf` for background information and the mathematical model.
+See <biorxiv-paper-link> for background information on the model and its implementation.
 
 ## License
 The SC-BIG logo was created using the large language model ChatGPT.
