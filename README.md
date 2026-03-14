@@ -1,5 +1,7 @@
 # Bayesian scDNA SNV Caller
 
+![PyPI - Version](https://img.shields.io/pypi/v/sc-big-caller)
+
 ![SC-BIG logo](docs/sc_big_logo.png)
 
 SC-BIG is a Bayesian model for somatic SNV calling in single-cell DNA sequencing that uses
