@@ -7,8 +7,18 @@ bulk sequencing data as a prior.
 
 ## Installation
 
+The `sc-big-caller` package provides an SC-BIG implementation and can be downloaded from the Python packaging index PyPI as follows:
+
 ```bash
-pip install -e .
+python3 -m pip install sc-big-caller
+```
+
+Alternatively, you can clone this repository and install the most recent version of SC-BIG in development mode:
+
+```bash
+git clone https://github.com/ICCB-Cologne/sc-big.git
+cd sc-big
+python3 -m pip install -e .
 ```
 
 ## Usage
