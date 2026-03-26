@@ -4,18 +4,20 @@
 
 ![SC-BIG logo](docs/sc_big_logo.png)
 
-SC-BIG is a Bayesian model for somatic SNV calling in single-cell DNA sequencing that uses
-bulk sequencing data as a prior.
+SC-BIG is a Bayesian model for somatic SNV calling in single-cell DNA
+sequencing that uses bulk sequencing data as a prior.
 
 ## Installation
 
-The `sc-big-caller` package provides an SC-BIG implementation and can be downloaded from the Python packaging index PyPI as follows:
+The `sc-big-caller` package provides an SC-BIG implementation and can be
+downloaded from the Python packaging index PyPI as follows:
 
 ```bash
 python3 -m pip install sc-big-caller
 ```
 
-Alternatively, you can clone this repository and install the most recent version of SC-BIG in development mode:
+Alternatively, you can clone this repository and install the most recent
+version of SC-BIG in development mode:
 
 ```bash
 git clone https://github.com/ICCB-Cologne/sc-big.git
@@ -27,8 +29,8 @@ python3 -m pip install -e .
 
 ### Command-line Interface
 
-After installation, the `sc-big` command is available. It can be used to create synthetic
-data, perform inference, and plot results.
+After installation, the `sc-big` command is available. It can be used to create
+synthetic data, perform inference, and plot results.
 
 ```bash
 # Simulate 50 single cells with custom parameters, exporting to JSON.
@@ -52,9 +54,11 @@ pytest tests/ -v
 
 ## Documentation
 
-See <biorxiv-paper-link> for background information on the model and its implementation.
+See our [preprint](https://www.biorxiv.org/content/10.64898/2026.03.12.705671)
+for background information on the model and its implementation.
 
 ## License
 The SC-BIG logo was created using the large language model ChatGPT.
-All code in this repository is licensed under the GPL-v3 as indicated in the source files.
-Please direct requests to daniel.schuette@iccb-cologne.org.
+All code in this repository is licensed under the GPL-v3 as indicated in the
+source files. Please direct requests to daniel.schuette@iccb-cologne.org. If
+you use SC-BIG in your work, please cite the preprint mentioned above.
